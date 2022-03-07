@@ -1,0 +1,59 @@
+// A correct class declaration without inheritance
+class myClass {
+    var a : Int = 0
+
+    fun myClass(initialVal : Int) {
+        a = initialVal
+    }
+
+    struct ClassStruct {
+        var a: Int
+        var b: Int
+    }
+
+    fun classFunct() : Int {
+        return 2
+    }
+}
+
+// A correct class declaration with inheritance
+class myOtherClass sonOf myClass {
+
+    fun myOtherClass() {
+    }
+}
+
+
+// Example of use of the class
+var myVar : myClass = myClass(4)
+var someInt : Int = myVar.classFunct()
+
+// A class must have a constructor
+class myClass2 {
+    var a : Int = 0
+}
+
+// Cannot assign classes without matching fields
+class myClass3 {
+    var a : Int = 0
+
+    fun myClass3(initialVal : Int) {
+        a = initialVal
+    }
+
+    fun someSpecialAnUniqueMethod() : Int {
+        return 2
+    }
+}
+class myClass4 {
+    var a : Int = 0
+
+    fun myClass3(initialVal : Int) {
+        a = initialVal
+    }
+
+    fun someSpecialAnUniqueMethod(newParam : Int) : Int {
+        return 2
+    }
+}
+var instance2 : myClass3 = myClass4(1)

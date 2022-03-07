@@ -1,15 +1,12 @@
 package norswap.sigh;
 
 import norswap.sigh.ast.*;
-import norswap.sigh.scopes.DeclarationContext;
-import norswap.sigh.scopes.DeclarationKind;
-import norswap.sigh.scopes.RootScope;
-import norswap.sigh.scopes.Scope;
-import norswap.sigh.scopes.SyntheticDeclarationNode;
+import norswap.sigh.scopes.*;
 import norswap.sigh.types.*;
 import norswap.uranium.Attribute;
 import norswap.uranium.Reactor;
 import norswap.uranium.Rule;
+import norswap.uranium.SemanticError;
 import norswap.utils.visitors.ReflectiveFieldWalker;
 import norswap.utils.visitors.Walker;
 
@@ -85,6 +82,9 @@ public final class SemanticAnalysis
 
     /** Current context for type inference (currently only to infer the type of empty arrays). */
     private SighNode inferenceContext;
+
+    /** Every class scope */
+    private final HashMap<String, ClassScope> classScope = new HashMap<>();
 
     /** Index of the current function argument. */
     private int argumentIndex;
@@ -343,29 +343,44 @@ public final class SemanticAnalysis
                 return;
             }
             
-            if (!(type instanceof StructType)) {
+            if (!(type instanceof StructType) && !(type instanceof ClassType)) {
                 r.errorFor("Trying to access a field on an expression of type " + type,
                         node,
                         node.attr("type"));
                 return;
             }
 
-            StructDeclarationNode decl = ((StructType) type).node;
+            if (type instanceof ClassType) {
+                ClassType classType = (ClassType) type;
+                Type fieldType = classType.hasField(node.fieldName);
+                if (fieldType == null) {
+                    String description = format("Field '%s' not defined in class '%s'",
+                                                node.fieldName, classType.name);
+                    r.errorFor("Class  a field that does not exist", node,
+                        node.attr("type"));
+                } else {
+                    R.rule(node, "type").by(rr -> rr.set(0, fieldType));
+                }
+            } else {
+                StructDeclarationNode decl = ((StructType) type).node;
 
-            for (DeclarationNode field: decl.fields)
-            {
-                if (!field.name().equals(node.fieldName)) continue;
+                for (DeclarationNode field: decl.fields)
+                {
+                    if (!field.name().equals(node.fieldName)) continue;
 
-                R.rule(node, "type")
-                .using(field, "type")
-                .by(Rule::copyFirst);
+                    R.rule(node, "type")
+                            .using(field, "type")
+                            .by(Rule::copyFirst);
 
-                return;
+                    return;
+                }
+
+                String description = format("Trying to access missing field %s on struct %s",
+                        node.fieldName, decl.name);
+                r.errorFor(description, node, node.attr("type"));
+
             }
 
-            String description = format("Trying to access missing field %s on struct %s",
-                    node.fieldName, decl.name);
-            r.errorFor(description, node, node.attr("type"));
         });
     }
 
@@ -410,13 +425,26 @@ public final class SemanticAnalysis
         .by(r -> {
             Type maybeFunType = r.get(0);
 
-            if (!(maybeFunType instanceof FunType)) {
-                r.error("trying to call a non-function expression: " + node.function, node.function);
+            if (!(maybeFunType instanceof FunType) && !(maybeFunType instanceof ClassType)) {
+                r.error("trying to call a non-function/non-class expression: " + node.function, node.function);
                 return;
             }
 
-            FunType funType = cast(maybeFunType);
-            r.set(0, funType.returnType);
+            FunType funType;
+
+            if (maybeFunType instanceof ClassType) {
+                ClassType classType = (ClassType) maybeFunType;
+                funType = classType.getConstructor();
+                if (funType == null) {
+                    r.error("Cannot instantiate a class that doesn't implement a constructor", node.function);
+                    return;
+                }
+                r.set(0, classType);
+            } else {
+                funType = cast(maybeFunType);
+                r.set(0, funType.returnType);
+            }
+
 
             Type[] params = funType.paramTypes;
             List<ExpressionNode> args = node.arguments;
@@ -580,8 +608,15 @@ public final class SemanticAnalysis
             if (node.left instanceof ReferenceNode
             ||  node.left instanceof FieldAccessNode
             ||  node.left instanceof ArrayAccessNode) {
-                if (!isAssignableTo(right, left))
-                    r.errorFor("Trying to assign a value to a non-compatible lvalue.", node);
+                if (left instanceof ClassType){
+                    StringBuilder sb = new StringBuilder();
+                    boolean assignable = ((ClassType) left).canBeAssignedWith(right, sb);
+                    if (!assignable)
+                        r.errorFor(sb.toString(), node.left);
+                } else {
+                    if (!isAssignableTo(right, left))
+                            r.errorFor("Trying to assign a value to a non-compatible lvalue.", node);
+                }
             }
             else
                 r.errorFor("Trying to assign to an non-lvalue expression.", node.left);
@@ -636,6 +671,7 @@ public final class SemanticAnalysis
     private static boolean isTypeDecl (DeclarationNode decl)
     {
         if (decl instanceof StructDeclarationNode) return true;
+        if (decl instanceof ClassDeclarationNode) return true;
         if (!(decl instanceof SyntheticDeclarationNode)) return false;
         SyntheticDeclarationNode synthetic = cast(decl);
         return synthetic.kind() == DeclarationKind.TYPE;
@@ -649,6 +685,7 @@ public final class SemanticAnalysis
      */
     private static boolean isAssignableTo (Type a, Type b)
     {
+
         if (a instanceof VoidType || b instanceof VoidType)
             return false;
 
@@ -744,11 +781,19 @@ public final class SemanticAnalysis
             Type expected = r.get(0);
             Type actual = r.get(1);
 
-            if (!isAssignableTo(actual, expected))
-                r.error(format(
-                    "incompatible initializer type provided for variable `%s`: expected %s but got %s",
-                    node.name, expected, actual),
-                    node.initializer);
+            if (expected instanceof ClassType){
+                StringBuilder sb = new StringBuilder();
+                boolean assignable = ((ClassType) expected).canBeAssignedWith(actual, sb);
+                if (!assignable)
+                    r.error(sb.toString(), node.initializer);
+            } else {
+                if (!isAssignableTo(actual, expected))
+                    r.error(format(
+                                    "incompatible initializer type provided for variable `%s`: expected %s but got %s",
+                                    node.name, expected, actual),
+                            node.initializer);
+            }
+
         });
     }
 
@@ -831,7 +876,7 @@ public final class SemanticAnalysis
     private void classDecl (ClassDeclarationNode node) {
 
         scope.declare(node.name, node);
-        scope = new Scope(node, scope);
+        scope = new ClassScope(node, scope, classScope);
 
         final Scope classScope = scope;
 
@@ -850,13 +895,6 @@ public final class SemanticAnalysis
                 }
             }
 
-
-//            Attribute[] dependencies = new Attribute[structDecl.fields.size() + 1];
-//            dependencies[0] = decl.attr("declared");
-//            forEachIndexed(structDecl.fields, (i, field) ->
-//                    dependencies[i + 1] = field.attr("type"));
-
-
             Attribute[] dependencies = new Attribute[attributes.size()];
             for (int i = 0; i < attributes.size(); i++) {
                 dependencies[i] = attributes.get(i).attr("type");
@@ -864,12 +902,22 @@ public final class SemanticAnalysis
 
             R.rule(node, "type").using(dependencies).by(rr -> {
                 for (int i = 0; i < dependencies.length; i++) {
+                    Object value = rr.get(i);
+                    if (value instanceof SemanticError) {
+                        rr.errorFor("Found errors in class body: " + node.name,
+                                node, node.attr("type"));
+                        return;
+                    }
                     type.addKeys(names.get(i), rr.get(i));
                 }
                 rr.set(0, type);
             });
         });
 
+        R.rule(node, "declared").using(node.attr("type")).by(r -> {
+            ClassType type = (ClassType) r.get(0);
+            r.set(0, type);
+        });
         R.rule(node, "constructor")
                 .by(r -> {
                     DeclarationContext constructor = classScope.lookup("<constructor>");
@@ -892,7 +940,7 @@ public final class SemanticAnalysis
                         } else {
                             // Check if the parent is a class.
                             if (!(parent.declaration instanceof ClassDeclarationNode)) {
-                                r.error("Parent class `" + node.parent + "` is not a class.", node);
+                                r.error("Parent `" + node.parent + "` is not a class.", node);
                             } else {
                                 // Check for cyclic inheritance.
                                 DeclarationContext current = parent;

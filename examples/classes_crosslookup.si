@@ -1,0 +1,25 @@
+class FatherClass {
+    var a : Int = 0
+
+    fun FatherClass(initialVal : Int) {
+        a = initialVal
+    }
+
+    fun parentFunction() : Int {
+        return 12
+    }
+}
+
+class ChildClass sonOf FatherClass {
+
+    fun ChildClass(initialVal : Int) {
+        a = initialVal
+    }
+
+    fun childFunction() : Int {
+        a = parentFunction()
+        b = otherFunc()
+        return a
+    }
+
+}

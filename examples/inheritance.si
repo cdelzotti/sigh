@@ -1,0 +1,33 @@
+// A class cannot inherit from a class that doesn't exist
+class yetAnotherClass sonOf aClassThatDoesNotExist {
+    var c : Int = 4
+
+    fun yetAnotherClass() {
+    }
+}
+
+// A class cannot inherit from something that's not a class
+class yetAnotherClass2 sonOf Int {
+    var c : Int = 4
+
+    fun yetAnotherClass2() {
+        c = 0
+    }
+}
+
+// Classes inheritance cannot be circular
+class cycleClass1 sonOf cycleClass2 {
+    var d : Int = 5
+
+    fun cycleClass1() : Int {
+        d = 0
+        return d
+    }
+}
+class cycleClass2 sonOf cycleClass1 {
+    var e : Int = 6
+
+    fun cycleClass2() {
+        e = 0
+    }
+}
