@@ -17,21 +17,17 @@ public class ClassScope extends Scope {
     }
 
     public DeclarationContext lookup(String name) {
-        // Perform classic lookup.
-        DeclarationContext ctx = super.lookup(name);
-        if (ctx != null) return ctx;
-
-//        // See if we have a field or method with this name in the current class.
-//        DeclarationNode declaration = declarations.get(name);
-//        if (declaration != null) {
-//            return new DeclarationContext(this, declaration);
-//        }
+        // See if we have a field or method with this name in the current class.
+        DeclarationNode declaration = declarations.get(name);
+        if (declaration != null) {
+            return new DeclarationContext(this, declaration);
+        }
         // See if we can find the field on the superclass.
         String parent = ((ClassDeclarationNode) node).parent;
         while (parent != null) {
             ClassScope classScope = classScopes.get(parent);
             if (classScope != null) {
-                DeclarationNode declaration = classScope.declarations.get(name);
+                declaration = classScope.declarations.get(name);
                 if (declaration != null) {
                     return new DeclarationContext(classScope, declaration);
                 }
@@ -40,6 +36,7 @@ public class ClassScope extends Scope {
                 parent = null;
             }
         }
-        return null;
+        // Perform classic lookup.
+        return super.lookup(name);
     }
 }

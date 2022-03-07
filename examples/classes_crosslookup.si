@@ -18,7 +18,6 @@ class ChildClass sonOf FatherClass {
 
     fun childFunction() : Int {
         a = parentFunction()
-        b = otherFunc()
         return a
     }
 
