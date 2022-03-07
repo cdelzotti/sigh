@@ -7,6 +7,7 @@ import java.util.HashMap;
 /**
  * Represent a lexical scope in which declarations occurs.
  */
+@SuppressWarnings("unckecked")
 public class Scope
 {
     // ---------------------------------------------------------------------------------------------

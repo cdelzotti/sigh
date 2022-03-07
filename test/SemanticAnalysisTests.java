@@ -46,6 +46,12 @@ public final class SemanticAnalysisTests extends UraniumTestFixture
 
     // ---------------------------------------------------------------------------------------------
 
+    @Test public void testClasses() {
+        successInput("class Point { var X: Int = 0 var Y: Int = 0 fun Point(x: Int, y: Int) { X = x Y = y } }");
+    }
+
+    // ---------------------------------------------------------------------------------------------
+
     @Test public void testLiteralsAndUnary() {
         successInput("return 42");
         successInput("return 42.0");
