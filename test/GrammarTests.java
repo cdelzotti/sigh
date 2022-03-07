@@ -1,6 +1,7 @@
 import norswap.autumn.AutumnTestFixture;
 import norswap.sigh.SighGrammar;
 import norswap.sigh.ast.*;
+import norswap.sigh.types.VoidType;
 import org.testng.annotations.Test;
 
 import static java.util.Arrays.asList;
@@ -107,6 +108,23 @@ public class GrammarTests extends AutumnTestFixture {
                 asList(new ParameterNode(null, "x", new SimpleTypeNode(null, "Int"))),
                 new SimpleTypeNode(null, "Int"),
                 new BlockNode(null, asList(new ReturnNode(null, intlit(1))))));
+
+        successExpect("class MyClass sonOf FatherClass { var x: Int = 0 fun MyClass (X: Int) { x = X } }",
+                new ClassDeclarationNode(
+                        null,
+                        "MyClass",
+                        "FatherClass",
+                        asList(
+                            new VarDeclarationNode(null, "x", new SimpleTypeNode(null, "Int"), intlit(0)),
+                            new FunDeclarationNode(null, "MyClass",
+                                asList(new ParameterNode(null, "X", new SimpleTypeNode(null, "Int"))),
+                                new SimpleTypeNode(null, "Void"),
+                                new BlockNode(null,
+                                    asList(
+                                        new ExpressionStatementNode(null, new AssignmentNode(null,
+                                        new ReferenceNode(null, "x"), new ReferenceNode(null, "X")))
+                                    )))
+                        )));
     }
 
     // ---------------------------------------------------------------------------------------------

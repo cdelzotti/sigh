@@ -1,0 +1,1 @@
+class MyClass sonOf FatherClass { var x: Int = 0 fun MyClass (X: Int) { x = X } }

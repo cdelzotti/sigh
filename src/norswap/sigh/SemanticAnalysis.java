@@ -936,18 +936,23 @@ public final class SemanticAnalysis
                         // Check if the parent class is declared.
                         DeclarationContext parent = classScope.lookup(node.parent);
                         if (parent == null) {
-                            r.error("No implementation found for parent class `" + node.parent + "`.", node);
+                            R.rule(node, "undeclaredAncestor").by(rr -> {
+                               rr.error("Undeclared ancestor `" + node.parent + "`.", node);
+                            });
+                            r.set(0, ancestors);
                         } else {
                             // Check if the parent is a class.
                             if (!(parent.declaration instanceof ClassDeclarationNode)) {
-                                r.error("Parent `" + node.parent + "` is not a class.", node);
+                                R.rule(node, "ancestorIsNotAClass").by(rr -> {
+                                    rr.error("Parent `" + node.parent + "` is not a class.", node);
+                                });
+                                r.set(0, ancestors);
                             } else {
                                 // Check for cyclic inheritance.
                                 DeclarationContext current = parent;
                                 boolean cyclic = false;
                                 String path = node.name + " <- ";
                                 while (current != null && !cyclic) {
-                                    ancestors.add(current);
                                     ClassDeclarationNode parentClass = (ClassDeclarationNode) current.declaration;
                                     path += parentClass.name + " <- ";
                                     if (parentClass.name.equals(node.name)) {
@@ -958,7 +963,10 @@ public final class SemanticAnalysis
                                 if (!cyclic) {
                                     r.set(0, ancestors);
                                 } else {
-                                    r.error("Cyclic inheritance detected : " + path, node);
+                                    R.rule(node, "cyclicAncestors").by(rr -> {
+                                        rr.error("Cyclic inheritance detected", node);
+                                    });
+                                    r.set(0, ancestors);
                                 }
                             }
                         }

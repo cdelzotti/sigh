@@ -47,7 +47,33 @@ public final class SemanticAnalysisTests extends UraniumTestFixture
     // ---------------------------------------------------------------------------------------------
 
     @Test public void testClasses() {
+        // Normal class declaration
         successInput("class Point { var X: Int = 0 var Y: Int = 0 fun Point(x: Int, y: Int) { X = x Y = y } }");
+        // Can inherit
+        successInput("class Obj { fun Obj() {}}  class Point sonOf Obj { var X: Int = 0 var Y: Int = 0 fun Point(x: Int, y: Int) { X = x Y = y } }");
+        // Can use members of the parent class
+        successInput("class Obj { var X : Int = 0 fun Obj() {} } class Obj2 sonOf Obj {  fun Obj2() { X = 1 } }");
+        // Type checking based on the shape of the class
+        successInput("class Obj { var X : Int = 0 fun Obj() {} } class Obj2 { var X : Int = 0  fun Obj2() { } } var myVar: Obj2 = Obj()");
+        // Matching class name to constructor
+        successInput("class Point { var X : Int = 0 var Y : Int = 0 fun Point(x : Int, y : Int) {X = x Y = y} } var myVar: Point = Point(12, 13)");
+        // Member call
+        successInput("class Point { var X : Int = 0 var Y : Int = 0 fun Point(x : Int, y : Int) {X = x Y = y} fun getX() : Int { return X } } var myVar: Point = Point(12, 13) var myX : Int = myVar.getX()");
+        successInput("class Point { var X : Int = 0 var Y : Int = 0 fun Point(x : Int, y : Int) {X = x Y = y} fun getX() : Int { return X } } var myVar: Point = Point(12, 13) myVar.Y = 14");
+
+
+        failureInputWith("class Point { var X : Int = 0 var Y : Int = 0 fun Point(x : Int, y : Int) {X = x Y = y} } var myVar: Point = Point(12)",
+                        "wrong number of arguments");
+        failureInputWith("class Obj { var X : Int = 0 fun Obj() {} } class Obj2 { var Y : Int = 0  fun Obj2() { } } var myVar: Obj2 = Obj()",
+            "Field", "is missing");
+        failureInputWith("class Point sonOf Obj { var X: Int = 0 var Y: Int = 0 fun Point(x: Int, y: Int) { X = x Y = y } }",
+                "Undeclared ancestor");
+        failureInputWith("class Point sonOf Int { var X: Int = 0 var Y: Int = 0 fun Point(x: Int, y: Int) { X = x Y = y } }",
+                        "not a class");
+        failureInputWith("class Class1 sonOf Class2 { fun Class1() {}} class Class2 sonOf Class1 { fun Class2() {}}",
+                        "Cyclic inheritance");
+        failureInputWith("class Point { var X: Int = 0 var Y: Int = 0 }", "Missing constructor for class `Point`");
+
     }
 
     // ---------------------------------------------------------------------------------------------

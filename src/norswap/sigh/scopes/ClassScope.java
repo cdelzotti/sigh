@@ -24,7 +24,7 @@ public class ClassScope extends Scope {
         }
         // See if we can find the field on the superclass.
         String parent = ((ClassDeclarationNode) node).parent;
-        while (parent != null) {
+        while (parent != null && !parent.equals(((ClassDeclarationNode) node).name())) {
             ClassScope classScope = classScopes.get(parent);
             if (classScope != null) {
                 declaration = classScope.declarations.get(name);

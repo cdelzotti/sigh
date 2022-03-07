@@ -1,0 +1,7 @@
+class Class1 sonOf Class2 {
+    fun Class1() {}
+}
+
+class Class2 sonOf Class1 {
+    fun Class2() {}
+}

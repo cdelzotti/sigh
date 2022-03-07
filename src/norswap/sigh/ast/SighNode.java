@@ -78,21 +78,21 @@ public abstract class SighNode
     //    Ideally we would replace all the AST classes by a small framework that generates code
     //    for them.
 
-    @Override public int hashCode() {
-        try {
-            Field[] fields = getFields();
-            int hash = 7;
-            for (Field field: fields) {
-                hash *= 31;
-                Object value = field.get(this);
-                if (value != null)
-                    hash += value.hashCode();
-            }
-            return hash;
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-    }
+//    @Override public int hashCode() {
+//        try {
+//            Field[] fields = getFields();
+//            int hash = 7;
+//            for (Field field: fields) {
+//                hash *= 31;
+//                Object value = field.get(this);
+//                if (value != null)
+//                    hash += value.hashCode();
+//            }
+//            return hash;
+//        } catch (IllegalAccessException e) {
+//            throw new RuntimeException(e);
+//        }
+//    }
 
     // ---------------------------------------------------------------------------------------------
 

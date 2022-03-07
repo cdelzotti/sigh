@@ -76,6 +76,7 @@ public class Scope
 
     // ---------------------------------------------------------------------------------------------
 
+    @SuppressWarnings("unchecked")
     public HashMap<String, DeclarationNode> getDeclarationsClone() {
         return (HashMap<String, DeclarationNode>) declarations.clone();
     }
