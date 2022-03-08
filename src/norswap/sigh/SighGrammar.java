@@ -59,6 +59,8 @@ public class SighGrammar extends Grammar
     public rule _else           = reserved("else");
     public rule _while          = reserved("while");
     public rule _return         = reserved("return");
+    public rule _unborn         = reserved("Unborn");
+    public rule _born           = reserved("born");
     public rule _class          = reserved("class");
     public rule _sonOf          = reserved("sonOf");
 
@@ -135,6 +137,8 @@ public class SighGrammar extends Grammar
         .left(basic_expression)
         .suffix(seq(DOT, identifier),
             $ -> new FieldAccessNode($.span(), $.$[0], $.$[1]))
+        .suffix(seq(DOT, _born, LPAREN, lazy(() -> this.block), RPAREN),
+            $ -> new BornNode($.span(), $.$[0], $.$[1]))
         .suffix(seq(LSQUARE, lazy(() -> this.expression), RSQUARE),
             $ -> new ArrayAccessNode($.span(), $.$[0], $.$[1]))
         .suffix(function_args,
@@ -209,9 +213,16 @@ public class SighGrammar extends Grammar
         .suffix(seq(LSQUARE, RSQUARE),
             $ -> new ArrayTypeNode($.span(), $.$[0]));
 
-    public rule type =
-        seq(array_type);
+    public rule unborn_type = left_expression()
+        .left(_unborn)
+        .suffix(seq(LANGLE, array_type, RANGLE),
+            $ -> new UnbornTypeNode($.span(), $.$[0]));
 
+    public rule type = choice(
+        seq(array_type),
+        seq(unborn_type)
+    );
+        
     public rule statement = lazy(() -> choice(
         this.block,
         this.var_decl,
@@ -272,7 +283,6 @@ public class SighGrammar extends Grammar
     public rule return_stmt =
         seq(_return, expression.or_push_null())
         .push($ -> new ReturnNode($.span(), $.$[0]));
-
 
     public rule maybe_classInheritence = seq(_sonOf, identifier).or_push_null();
 

@@ -22,7 +22,8 @@ public final class Test
 //        String file = "classes_features.si";
 //        String file = "classes_crosslookup.si";
 //        String file = "inheritance.si";
-        String file = "classes_examples.si";
+//        String file = "classes_examples.si";
+        String file = "testUnborn.si";
         String path = Paths.get("examples/", file).toAbsolutePath().toString();
         String src = IO.slurp(path);
         SighGrammar grammar = new SighGrammar();
@@ -50,8 +51,8 @@ public final class Test
             return;
         }
 
-        Interpreter interpreter = new Interpreter(reactor);
-        interpreter.interpret(tree);
-        System.out.println("success");
+        // Interpreter interpreter = new Interpreter(reactor);
+        // interpreter.interpret(tree);
+        // System.out.println("success");
     }
 }
