@@ -20,10 +20,10 @@ public final class Test
 //         String file = "fizzbuzz.si";
 //        String file = "kitchensink.si";
 //        String file = "classes_features.si";
-//        String file = "classes_crosslookup.si";
+        String file = "classes_crosslookup.si";
 //        String file = "inheritance.si";
 //        String file = "classes_examples.si";
-        String file = "testUnborn.si";
+//        String file = "testUnborn.si";
         String path = Paths.get("examples/", file).toAbsolutePath().toString();
         String src = IO.slurp(path);
         SighGrammar grammar = new SighGrammar();

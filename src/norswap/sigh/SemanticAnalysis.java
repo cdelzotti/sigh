@@ -84,7 +84,7 @@ public final class SemanticAnalysis
     private SighNode inferenceContext;
 
     /** Every class scope */
-    private final HashMap<String, ClassScope> classScope = new HashMap<>();
+    private final HashMap<ClassDeclarationNode, ClassScope> classScopes = new HashMap<>();
 
     /** Index of the current function argument. */
     private int argumentIndex;
@@ -907,7 +907,9 @@ public final class SemanticAnalysis
     private void classDecl (ClassDeclarationNode node) {
 
         scope.declare(node.name, node);
-        scope = new ClassScope(node, scope, classScope);
+
+        scope = new ClassScope(node, scope, classScopes, node);
+        R.set(node, "scope", scope);
 
         final Scope classScope = scope;
 
@@ -934,7 +936,8 @@ public final class SemanticAnalysis
             R.rule(node, "type").using(dependencies).by(rr -> {
                 for (int i = 0; i < dependencies.length; i++) {
                     Object value = rr.get(i);
-                    if (value instanceof SemanticError) {
+                    if (value instanceof SemanticError) {ClassScope parentScope;
+
                         rr.errorFor("Found errors in class body: " + node.name,
                                 node, node.attr("type"));
                         return;

@@ -3,17 +3,19 @@ package norswap.sigh.scopes;
 import norswap.sigh.ast.ClassDeclarationNode;
 import norswap.sigh.ast.DeclarationNode;
 import norswap.sigh.ast.SighNode;
+import norswap.uranium.Reactor;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class ClassScope extends Scope {
 
-    private HashMap<String, ClassScope> classScopes;
+    private final HashMap<ClassDeclarationNode, ClassScope> classScopes;
 
-    public ClassScope(ClassDeclarationNode node, Scope parent, HashMap<String, ClassScope> classScopes) {
+    public ClassScope(ClassDeclarationNode node, Scope parent, HashMap<ClassDeclarationNode, ClassScope> classScopes, ClassDeclarationNode currentClass) {
         super(node, parent);
         this.classScopes = classScopes;
-        classScopes.put(node.name(), this);
+        classScopes.put(currentClass, this);
     }
 
     public DeclarationContext lookup(String name) {
@@ -22,16 +24,22 @@ public class ClassScope extends Scope {
         if (declaration != null) {
             return new DeclarationContext(this, declaration);
         }
-        // See if we can find the field on the superclass.
+        // Find parent scope.
         String parent = ((ClassDeclarationNode) node).parent;
-        while (parent != null && !parent.equals(((ClassDeclarationNode) node).name())) {
-            ClassScope classScope = classScopes.get(parent);
-            if (classScope != null) {
-                declaration = classScope.declarations.get(name);
-                if (declaration != null) {
-                    return new DeclarationContext(classScope, declaration);
+        ArrayList<String> parents = new ArrayList<>();
+        while (parent != null && !parents.contains(parent)) {
+            // Find parent context
+            DeclarationContext parentContext = super.lookup(parent);
+            if (parentContext != null && parentContext.declaration instanceof ClassDeclarationNode) {
+                // Parent exists, find its scope
+                ClassScope parentScope = this.classScopes.get(parentContext.declaration);
+                // Find the field or method in the parent scope
+                DeclarationNode parentDeclaration = parentScope.declarations.get(name);
+                if (parentDeclaration != null) {
+                    return new DeclarationContext(parentScope, parentDeclaration);
                 }
-                parent = ((ClassDeclarationNode) classScope.node).parent;
+                parents.add(parent);
+                parent = ((ClassDeclarationNode) parentContext.declaration).parent;
             } else {
                 parent = null;
             }
