@@ -21,3 +21,7 @@ class ChildClass sonOf FatherClass {
         return a
     }
 }
+
+var instance : FatherClass = ChildClass(10)
+instance.a = instance.a + instance.parentFunction()
+print("Value of a : " + instance.a)

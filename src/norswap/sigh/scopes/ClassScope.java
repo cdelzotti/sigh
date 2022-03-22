@@ -3,6 +3,8 @@ package norswap.sigh.scopes;
 import norswap.sigh.ast.ClassDeclarationNode;
 import norswap.sigh.ast.DeclarationNode;
 import norswap.sigh.ast.SighNode;
+import norswap.sigh.types.ClassType;
+import norswap.sigh.types.Type;
 import norswap.uranium.Reactor;
 
 import java.util.ArrayList;
@@ -18,6 +20,7 @@ public class ClassScope extends Scope {
         classScopes.put(currentClass, this);
     }
 
+    @Override
     public DeclarationContext lookup(String name) {
         // See if we have a field or method with this name in the current class.
         DeclarationNode declaration = declarations.get(name);
@@ -47,4 +50,30 @@ public class ClassScope extends Scope {
         // Perform classic lookup.
         return super.lookup(name);
     }
+
+//    public boolean canBeAssignedWith(ClassScope other, StringBuilder error) {
+//        for (String key : fields.keySet()) {
+//            // If the other type has a field with the same name,
+//            // check if it can be assigned to
+//            Type currentField = fields.get(key);
+//            Type otherField = other_class.hasField(key);
+//            if (otherField == null) {
+//                error.append("Field ")
+//                        .append(key)
+//                        .append(" ")
+//                        .append(currentField.name())
+//                        .append(" is missing in ")
+//                        .append(other_class.name)
+//                        .append("\n");
+//                return false;
+//            }
+//            // Both fields must be identical
+//            if (!currentField.name().equals(otherField.name())) {
+//                error.append("Field ").append(key).append(" has different types :\n");
+//                error.append(currentField.name()).append(" and ").append(otherField.name());
+//                return false;
+//            }
+//        }
+//        return true;
+//    }
 }
