@@ -22,6 +22,12 @@ class ChildClass sonOf FatherClass {
     }
 }
 
+fun classicalFunction(classicParam : Int) : Int {
+    return classicParam + 1
+}
+
+
+var test : Int = classicalFunction(12)
 var instance : FatherClass = ChildClass(10)
 instance.a = instance.a + instance.parentFunction()
 print("Value of a : " + instance.a)

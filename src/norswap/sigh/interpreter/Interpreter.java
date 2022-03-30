@@ -1,14 +1,8 @@
 package norswap.sigh.interpreter;
 
 import norswap.sigh.ast.*;
-import norswap.sigh.scopes.DeclarationKind;
-import norswap.sigh.scopes.RootScope;
-import norswap.sigh.scopes.Scope;
-import norswap.sigh.scopes.SyntheticDeclarationNode;
-import norswap.sigh.types.FloatType;
-import norswap.sigh.types.IntType;
-import norswap.sigh.types.StringType;
-import norswap.sigh.types.Type;
+import norswap.sigh.scopes.*;
+import norswap.sigh.types.*;
 import norswap.uranium.Reactor;
 import norswap.utils.Util;
 import norswap.utils.exceptions.Exceptions;
@@ -16,6 +10,7 @@ import norswap.utils.exceptions.NoStackException;
 import norswap.utils.visitors.ValuedVisitor;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static norswap.utils.Util.cast;
@@ -411,21 +406,61 @@ public final class Interpreter
             return buildStruct(((Constructor) decl).declaration, args);
 
         ScopeStorage oldStorage = storage;
+//        Scope scope = !(decl instanceof ClassDeclarationNode) ?  reactor.get(decl, "scope") : reactor.get(((Scope)reactor.get(decl, "scope")).lookup("<constructor>").declaration, "scope");
         Scope scope = reactor.get(decl, "scope");
         storage = new ScopeStorage(scope, storage);
 
-        FunDeclarationNode funDecl = (FunDeclarationNode) decl;
-        coIterate(args, funDecl.parameters,
-                (arg, param) -> storage.set(scope, param.name, arg));
+        FunDeclarationNode funDecl;
+        ClassInstance returnValue;
+        if (decl instanceof ClassDeclarationNode) {
+            // Function to execute is the constructor, retrieve the declaration
+            funDecl = (FunDeclarationNode) scope.lookup("<constructor>").declaration;
+            // Add constructor scope on top of the class scope
+            Scope constructorScope = reactor.get(funDecl, "scope");
+            storage = new ScopeStorage(constructorScope, storage);
+            // Must build the instance first
+            ClassInstance instance = new ClassInstance();
+            HashMap<String, Type> innerTypes = ((ClassType) reactor.get(decl, "type")).getVariables();
+            for (String key : innerTypes.keySet()) {
+                Type type = innerTypes.get(key);
+                DeclarationNode declNode = scope.lookup(key).declaration;
+                // Register class variable in the class scope
+                if (declNode instanceof VarDeclarationNode) {
+                    instance.set_field(key, get(((VarDeclarationNode) declNode).initializer));
+                    storage.set(scope, key, instance.get_field(key));
+                }
+            }
+            // Register the parameter in the constructor scope
+            coIterate(args, funDecl.parameters,
+                    (arg, param) -> storage.set(constructorScope, param.name, arg));
+            returnValue = instance;
+        } else{
+            funDecl = (FunDeclarationNode) decl;
+            returnValue = null;
+            coIterate(args, funDecl.parameters,
+                    (arg, param) -> storage.set(scope, param.name, arg));
+        }
 
         try {
             get(funDecl.block);
         } catch (Return r) {
             return r.value;
         } finally {
+            if (returnValue != null){
+                // Find the class scope storage
+                boolean found = false; // Use a boolean to avoid using break, some dogmatic people don't like breaks
+                while (storage != oldStorage && !found) {
+                    if (storage.scope instanceof ClassScope) {
+                        returnValue.refresh(storage);
+                        found = true;
+                    } else {
+                        storage = storage.parent;
+                    }
+                }
+            }
             storage = oldStorage;
         }
-        return null;
+        return returnValue;
     }
 
     // ---------------------------------------------------------------------------------------------

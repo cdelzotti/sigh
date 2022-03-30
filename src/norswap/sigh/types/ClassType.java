@@ -1,6 +1,7 @@
 package norswap.sigh.types;
 
 import java.util.HashMap;
+import java.util.List;
 
 public class ClassType extends Type
 {
@@ -67,5 +68,13 @@ public class ClassType extends Type
         return name;
     }
 
-    
+    public HashMap<String, Type> getVariables() {
+        HashMap<String, Type> variables = new java.util.HashMap<>();
+        for (String key : fields.keySet()) {
+            if (!(fields.get(key) instanceof ClassType) && !(fields.get(key) instanceof FunType)) {
+                variables.put(key, fields.get(key));
+            }
+        }
+        return variables;
+    }
 }

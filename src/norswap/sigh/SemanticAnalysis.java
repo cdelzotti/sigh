@@ -957,6 +957,7 @@ public final class SemanticAnalysis
                     type.addKeys(names.get(i), rr.get(i));
                 }
                 rr.set(0, type);
+                ((ClassScope) classScope).setType(type);
             });
         });
 

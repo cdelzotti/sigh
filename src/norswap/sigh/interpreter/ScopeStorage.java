@@ -3,6 +3,7 @@ package norswap.sigh.interpreter;
 import norswap.sigh.scopes.RootScope;
 import norswap.sigh.scopes.Scope;
 import java.util.HashMap;
+import java.util.Iterator;
 
 /**
  * The concrete instantiation of a {@link Scope} at runtime.
@@ -37,7 +38,7 @@ public final class ScopeStorage
      */
     Object get (Scope scope, String name)
     {
-        if (scope == this.scope)
+        if (scope.equals(this.scope))
             return values.get(name);
         else if (parent != null)
             return parent.get(scope, name);
@@ -53,7 +54,7 @@ public final class ScopeStorage
      */
     void set (Scope scope, String name, Object value)
     {
-        if (scope == this.scope)
+        if (scope.equals(this.scope))
             values.put(name, value);
         else
             parent.set(scope, name, value);
@@ -81,4 +82,8 @@ public final class ScopeStorage
     }
 
     // ---------------------------------------------------------------------------------------------
+
+    public Iterator<String> names() {
+        return values.keySet().iterator();
+    }
 }

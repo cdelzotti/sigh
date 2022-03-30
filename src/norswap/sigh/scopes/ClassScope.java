@@ -13,11 +13,24 @@ import java.util.HashMap;
 public class ClassScope extends Scope {
 
     private final HashMap<ClassDeclarationNode, ClassScope> classScopes;
+    private ClassType type;
 
-    public ClassScope(ClassDeclarationNode node, Scope parent, HashMap<ClassDeclarationNode, ClassScope> classScopes, ClassDeclarationNode currentClass) {
+    public ClassScope(ClassDeclarationNode node, Scope parent, HashMap<ClassDeclarationNode, ClassScope> classScopes,
+                      ClassDeclarationNode currentClass) {
         super(node, parent);
         this.classScopes = classScopes;
         classScopes.put(currentClass, this);
+    }
+
+    public void setType(ClassType type) {
+        this.type = type;
+    }
+
+    public boolean equals(Object o){
+        if (o == null) return false;
+        if (!(o instanceof ClassScope)) return false;
+        ClassScope other = (ClassScope) o;
+        return this.type.canBeAssignedWith(other.type, new StringBuilder());
     }
 
     @Override
@@ -51,29 +64,5 @@ public class ClassScope extends Scope {
         return super.lookup(name);
     }
 
-//    public boolean canBeAssignedWith(ClassScope other, StringBuilder error) {
-//        for (String key : fields.keySet()) {
-//            // If the other type has a field with the same name,
-//            // check if it can be assigned to
-//            Type currentField = fields.get(key);
-//            Type otherField = other_class.hasField(key);
-//            if (otherField == null) {
-//                error.append("Field ")
-//                        .append(key)
-//                        .append(" ")
-//                        .append(currentField.name())
-//                        .append(" is missing in ")
-//                        .append(other_class.name)
-//                        .append("\n");
-//                return false;
-//            }
-//            // Both fields must be identical
-//            if (!currentField.name().equals(otherField.name())) {
-//                error.append("Field ").append(key).append(" has different types :\n");
-//                error.append(currentField.name()).append(" and ").append(otherField.name());
-//                return false;
-//            }
-//        }
-//        return true;
-//    }
+
 }
