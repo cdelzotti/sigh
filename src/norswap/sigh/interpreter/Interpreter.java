@@ -276,6 +276,10 @@ public final class Interpreter
         if (node.left instanceof FieldAccessNode) {
             FieldAccessNode fieldAccess = (FieldAccessNode) node.left;
             Object object = get(fieldAccess.stem);
+            // If it is a Class Instance, extract fields to handle it as a normal struct
+            if (object instanceof ClassInstance) {
+                object = ((ClassInstance) object).fields();
+            }
             if (object == Null.INSTANCE)
                 throw new PassthroughException(
                     new NullPointerException("accessing field of null object"));
@@ -383,6 +387,9 @@ public final class Interpreter
         if (stem == Null.INSTANCE)
             throw new PassthroughException(
                 new NullPointerException("accessing field of null object"));
+        // If it is a Class Instance, extract fields to handle it as a Struct
+        if (stem instanceof ClassInstance)
+            stem = ((ClassInstance) stem).fields();
         return stem instanceof Map
                 ? Util.<Map<String, Object>>cast(stem).get(node.fieldName)
                 : (long) ((Object[]) stem).length; // only field on arrays
@@ -407,22 +414,38 @@ public final class Interpreter
 
         ScopeStorage oldStorage = storage;
 //        Scope scope = !(decl instanceof ClassDeclarationNode) ?  reactor.get(decl, "scope") : reactor.get(((Scope)reactor.get(decl, "scope")).lookup("<constructor>").declaration, "scope");
-        Scope scope = reactor.get(decl, "scope");
+        Scope scope = !(node.function instanceof FieldAccessNode) ?reactor.get(decl, "scope") : ((ClassInstance) get(((FieldAccessNode) node.function).stem)).scope();
         storage = new ScopeStorage(scope, storage);
 
         FunDeclarationNode funDecl;
         ClassInstance returnValue;
-        if (decl instanceof ClassDeclarationNode) {
+        // Turns a function field access into a classical function call
+        if (node.function instanceof FieldAccessNode) {
+            ClassInstance classInstance = (ClassInstance) get(((FieldAccessNode) node.function).stem);
+            ClassScope classScope = classInstance.scope();
+            funDecl = (FunDeclarationNode) classScope.lookup(((FieldAccessNode) node.function).fieldName).declaration;
+            returnValue = classInstance;
+            // Restore the class scope
+            for (String key : classInstance.fields().keySet()){
+                storage.set(scope, key, classInstance.get_field(key));
+            }
+            // Create a functionScope for parameters
+            Scope functionScope = reactor.get(funDecl, "scope");
+            storage = new ScopeStorage(functionScope, storage);
+            // Register the parameter in the function scope
+            coIterate(args, funDecl.parameters,
+                    (arg, param) -> storage.set(functionScope, param.name, arg));
+        } else if (decl instanceof ClassDeclarationNode) {
             // Function to execute is the constructor, retrieve the declaration
             funDecl = (FunDeclarationNode) scope.lookup("<constructor>").declaration;
             // Add constructor scope on top of the class scope
             Scope constructorScope = reactor.get(funDecl, "scope");
             storage = new ScopeStorage(constructorScope, storage);
             // Must build the instance first
-            ClassInstance instance = new ClassInstance();
-            HashMap<String, Type> innerTypes = ((ClassType) reactor.get(decl, "type")).getVariables();
+            ClassType type = (ClassType) reactor.get(decl, "type");
+            ClassInstance instance = new ClassInstance((ClassScope) scope, type);
+            HashMap<String, Type> innerTypes = type.getVariables();
             for (String key : innerTypes.keySet()) {
-                Type type = innerTypes.get(key);
                 DeclarationNode declNode = scope.lookup(key).declaration;
                 // Register class variable in the class scope
                 if (declNode instanceof VarDeclarationNode) {
@@ -435,6 +458,7 @@ public final class Interpreter
                     (arg, param) -> storage.set(constructorScope, param.name, arg));
             returnValue = instance;
         } else{
+            // Normal function call
             funDecl = (FunDeclarationNode) decl;
             returnValue = null;
             coIterate(args, funDecl.parameters,
@@ -459,6 +483,9 @@ public final class Interpreter
                 }
             }
             storage = oldStorage;
+            // If it is a field function access, set return value to null to allow the function to return null
+            if (node.function instanceof FieldAccessNode)
+                returnValue = null;
         }
         return returnValue;
     }

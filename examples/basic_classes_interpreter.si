@@ -5,8 +5,8 @@ class FatherClass {
         a = initialVal
     }
 
-    fun parentFunction() : Int {
-        return 12
+    fun parentFunction(niceParam : Int) : Int {
+        return niceParam + a
     }
 }
 
@@ -17,7 +17,7 @@ class ChildClass sonOf FatherClass {
     }
 
     fun childFunction() : Int {
-        a = parentFunction()
+        a = parentFunction(4)
         return a
     }
 }
@@ -26,8 +26,13 @@ fun classicalFunction(classicParam : Int) : Int {
     return classicParam + 1
 }
 
+struct Pair {
+    var a: Int
+    var b: Int
+}
 
-var test : Int = classicalFunction(12)
+print("Starting execution")
 var instance : FatherClass = ChildClass(10)
-instance.a = instance.a + instance.parentFunction()
+instance.a = instance.a + instance.parentFunction(10)
 print("Value of a : " + instance.a)
+print("If that final line prints, it means that this shit works")
