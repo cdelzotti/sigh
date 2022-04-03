@@ -71,9 +71,7 @@ public class ClassType extends Type
     public HashMap<String, Type> getVariables() {
         HashMap<String, Type> variables = new java.util.HashMap<>();
         for (String key : fields.keySet()) {
-            if (!(fields.get(key) instanceof ClassType) && !(fields.get(key) instanceof FunType)) {
-                variables.put(key, fields.get(key));
-            }
+            variables.put(key, fields.get(key));
         }
         return variables;
     }

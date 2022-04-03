@@ -1,5 +1,15 @@
 class FatherClass {
+
+    class InnerClass {
+        var x : Int = 12
+        var a : Int = 0
+
+        fun InnerClass(){}
+
+    }
+
     var a : Int = 0
+    var innerClass : InnerClass = InnerClass()
 
     fun FatherClass(initialVal : Int) {
         a = initialVal
@@ -8,12 +18,16 @@ class FatherClass {
     fun parentFunction(niceParam : Int) : Int {
         return niceParam + a
     }
+
+    fun scopeEscape() : InnerClass {
+        return innerClass
+    }
 }
 
 class ChildClass sonOf FatherClass {
 
     fun ChildClass(initialVal : Int) {
-        a = initialVal
+        a = initialVal + innerClass.x
     }
 
     fun childFunction() : Int {
@@ -26,10 +40,6 @@ fun classicalFunction(classicParam : Int) : Int {
     return classicParam + 1
 }
 
-struct Pair {
-    var a: Int
-    var b: Int
-}
 
 print("Starting execution")
 var instance : FatherClass = ChildClass(10)

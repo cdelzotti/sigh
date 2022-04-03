@@ -925,6 +925,12 @@ public final class SemanticAnalysis
 
         final Scope classScope = scope;
 
+        R.rule().using().by(r -> {
+            // Ensure that the class name starts with a capital letter.
+            if (!Character.isUpperCase(node.name.charAt(0)))
+                r.errorFor("Class name must start with a capital letter.", node, node.attr("StartCapitalLetterCheck"));
+        });
+
         R.rule().using(node.attr("ancestors")).by(r -> {
             ArrayList<DeclarationContext> ancestors = r.get(0);
             ClassType type = new ClassType(node.name);
