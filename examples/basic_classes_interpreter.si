@@ -1,48 +1,15 @@
-class FatherClass {
+class Car {
+    fun Car () {}
 
-    class InnerClass {
-        var x : Int = 12
-        var a : Int = 0
-
-        fun InnerClass(){}
-
-    }
-
-    var a : Int = 0
-    var innerClass : InnerClass = InnerClass()
-
-    fun FatherClass(initialVal : Int) {
-        a = initialVal
-    }
-
-    fun parentFunction(niceParam : Int) : Int {
-        return niceParam + a
-    }
-
-    fun scopeEscape() : InnerClass {
-        return innerClass
+    class Engine {
+        var speed : Int = 0
+        fun Engine(){}
+        fun accelerate(){
+            speed = speed + 5
+        }
     }
 }
 
-class ChildClass sonOf FatherClass {
-
-    fun ChildClass(initialVal : Int) {
-        a = initialVal + innerClass.x
-    }
-
-    fun childFunction() : Int {
-        a = parentFunction(4)
-        return a
-    }
-}
-
-fun classicalFunction(classicParam : Int) : Int {
-    return classicParam + 1
-}
-
-
-print("Starting execution")
-var instance : FatherClass = ChildClass(10)
-instance.a = instance.a + instance.parentFunction(10)
-print("Value of a : " + instance.a)
-print("If that final line prints, it means that this shit works")
+var engine : Engine = Engine()
+engine.accelerate()
+print("" + engine.speed)

@@ -1,0 +1,19 @@
+if (false) print("Not working correctly") else return print("Working correctly")
+
+
+class A {
+    var a : Int = 0
+    fun A(){}
+
+    fun increment(){a = a + 1}
+}
+
+class B {
+    var b : Int = 0
+    var a : Int = 0
+    fun B(){}
+    fun increment(){b = b + 1}
+}
+var b : B = A()
+b.increment()
+print(""+a.a+" "+b.b)

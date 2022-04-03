@@ -25,6 +25,7 @@ public final class Test
 //        String file = "classes_examples.si";
 //        String file = "testUnborn.si";
         String file = "basic_classes_interpreter.si";
+//        String file = "testIfStatement.si";
         String path = Paths.get("examples/", file).toAbsolutePath().toString();
         String src = IO.slurp(path);
         SighGrammar grammar = new SighGrammar();
