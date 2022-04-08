@@ -3,6 +3,8 @@ package norswap.sigh.scopes;
 import norswap.sigh.ast.ClassDeclarationNode;
 import norswap.sigh.ast.DeclarationNode;
 import norswap.sigh.ast.SighNode;
+import norswap.sigh.types.ClassType;
+import norswap.sigh.types.Type;
 import norswap.uranium.Reactor;
 
 import java.util.ArrayList;
@@ -11,13 +13,27 @@ import java.util.HashMap;
 public class ClassScope extends Scope {
 
     private final HashMap<ClassDeclarationNode, ClassScope> classScopes;
+    private ClassType type;
 
-    public ClassScope(ClassDeclarationNode node, Scope parent, HashMap<ClassDeclarationNode, ClassScope> classScopes, ClassDeclarationNode currentClass) {
+    public ClassScope(ClassDeclarationNode node, Scope parent, HashMap<ClassDeclarationNode, ClassScope> classScopes,
+                      ClassDeclarationNode currentClass) {
         super(node, parent);
         this.classScopes = classScopes;
         classScopes.put(currentClass, this);
     }
 
+    public void setType(ClassType type) {
+        this.type = type;
+    }
+
+    public boolean equals(Object o){
+        if (o == null) return false;
+        if (!(o instanceof ClassScope)) return false;
+        ClassScope other = (ClassScope) o;
+        return this.type.canBeAssignedWith(other.type, new StringBuilder());
+    }
+
+    @Override
     public DeclarationContext lookup(String name) {
         // See if we have a field or method with this name in the current class.
         DeclarationNode declaration = declarations.get(name);
@@ -47,4 +63,6 @@ public class ClassScope extends Scope {
         // Perform classic lookup.
         return super.lookup(name);
     }
+
+
 }

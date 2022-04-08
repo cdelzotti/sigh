@@ -50,9 +50,8 @@ public final class Test
             //     AttributeTreeFormatter.formatWalkFields(tree, reactor, SighNode.class));
             return;
         }
-
-        // Interpreter interpreter = new Interpreter(reactor);
-        // interpreter.interpret(tree);
-        // System.out.println("success");
+         Interpreter interpreter = new Interpreter(reactor);
+         interpreter.interpret(tree);
+         System.out.println("success");
     }
 }

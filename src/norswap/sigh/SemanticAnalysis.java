@@ -358,7 +358,7 @@ public final class SemanticAnalysis
                 if (fieldType == null) {
                     String description = format("Field '%s' not defined in class '%s'",
                                                 node.fieldName, classType.name);
-                    r.errorFor("Class  a field that does not exist", node,
+                    r.errorFor(description, node,
                         node.attr("type"));
                 } else {
                     R.rule(node, "type").by(rr -> rr.set(0, fieldType));
@@ -463,8 +463,8 @@ public final class SemanticAnalysis
                 Type paramType = funType.paramTypes[i];
                 if (!isAssignableTo(argType, paramType))
                     r.errorFor(format(
-                            "incompatible argument provided for argument %d: expected %s but got %s",
-                            i, paramType, argType),
+                            "incompatible argument provided for argument %d in %s: expected %s but got %s",
+                            i, node.function.contents(),paramType, argType),
                         node.arguments.get(i));
             }
         });
@@ -627,6 +627,18 @@ public final class SemanticAnalysis
             ||  node.left instanceof FieldAccessNode
             ||  node.left instanceof ArrayAccessNode) {
                 if (left instanceof ClassType){
+//                    if (!(right instanceof ClassType)){
+//                        r.errorFor("Attempting to assign non-class type to class type", node.right);
+//                        return;
+//                    }
+//                    R.rule()
+//                    .using(node.left.attr("scope"), node.right.attr("scope"))
+//                    .by(rr -> {
+//                        ClassScope leftScope  = (ClassScope) rr.get(0);
+//                        ClassScope rightScope = (ClassScope) rr.get(1);
+//
+//                    });
+
                     StringBuilder sb = new StringBuilder();
                     boolean assignable = ((ClassType) left).canBeAssignedWith(right, sb);
                     if (!assignable)
@@ -913,6 +925,12 @@ public final class SemanticAnalysis
 
         final Scope classScope = scope;
 
+        R.rule().using().by(r -> {
+            // Ensure that the class name starts with a capital letter.
+            if (!Character.isUpperCase(node.name.charAt(0)))
+                r.errorFor("Class name must start with a capital letter.", node, node.attr("StartCapitalLetterCheck"));
+        });
+
         R.rule().using(node.attr("ancestors")).by(r -> {
             ArrayList<DeclarationContext> ancestors = r.get(0);
             ClassType type = new ClassType(node.name);
@@ -945,6 +963,7 @@ public final class SemanticAnalysis
                     type.addKeys(names.get(i), rr.get(i));
                 }
                 rr.set(0, type);
+                ((ClassScope) classScope).setType(type);
             });
         });
 
@@ -992,6 +1011,7 @@ public final class SemanticAnalysis
                                     if (parentClass.name.equals(node.name)) {
                                         cyclic = true;
                                     }
+                                    ancestors.add(current);
                                     current = classScope.lookup(parentClass.parent);
                                 }
                                 if (!cyclic) {

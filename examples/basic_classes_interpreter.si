@@ -1,0 +1,15 @@
+class Car {
+    fun Car () {}
+
+    class Engine {
+        var speed : Int = 0
+        fun Engine(){}
+        fun accelerate(){
+            speed = speed + 5
+        }
+    }
+}
+
+var engine : Engine = Engine()
+engine.accelerate()
+print("" + engine.speed)
