@@ -1,6 +1,7 @@
 import norswap.autumn.AutumnTestFixture;
 import norswap.sigh.SighGrammar;
 import norswap.sigh.ast.*;
+import norswap.sigh.types.UnbornType;
 import norswap.sigh.types.VoidType;
 import org.testng.annotations.Test;
 
@@ -125,6 +126,25 @@ public class GrammarTests extends AutumnTestFixture {
                                         new ReferenceNode(null, "x"), new ReferenceNode(null, "X")))
                                     )))
                         )));
+
+        successExpect("fun myFunc(): Unborn<Int> { var myVar: Int = 0 return myVar }",
+            new FunDeclarationNode(
+                null,
+                "myFunc", 
+                asList(),
+                new UnbornTypeNode(null, new SimpleTypeNode(null, "Int")),
+                new BlockNode(null, asList(new VarDeclarationNode(null, "myVar", new SimpleTypeNode(null, "Int"), intlit(0)), new ReturnNode(null, new ReferenceNode(null, "myVar"))))
+            )
+        );
+
+        successExpect("var aNiceVar: Unborn<Int> = myFunc()",
+            new VarDeclarationNode(
+                null, 
+                "aNiceVar", 
+                new UnbornTypeNode(null, new SimpleTypeNode(null, "Int")),
+                new FunCallNode(null, new ReferenceNode(null, "myFunc"), asList())
+            )
+        );
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -153,6 +173,16 @@ public class GrammarTests extends AutumnTestFixture {
         successExpect("while 1 < 2 { return } ", new WhileNode(null,
             new BinaryExpressionNode(null, intlit(1), LOWER, intlit(2)),
             new BlockNode(null, asList(new ReturnNode(null, null)))));
+
+        successExpect("aNiceVar = anotherNiceVar.born({ aNiceVar = 14 })",
+            new ExpressionStatementNode(null,
+                new AssignmentNode(
+                    null,
+                    new ReferenceNode(null, "aNiceVar"), 
+                    new BornNode(null, new ReferenceNode(null, "anotherNiceVar"), new BlockNode(null, asList(new ExpressionStatementNode(null, new AssignmentNode(null, new ReferenceNode(null, "aNiceVar"), intlit(14))))))
+                )
+            )
+        );
     }
 
     // ---------------------------------------------------------------------------------------------
