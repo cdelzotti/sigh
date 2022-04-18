@@ -532,7 +532,7 @@ public final class Interpreter
 
     private Void ifStmt (IfNode node)
     {
-        if (get(node.condition) != null)
+        if (get(node.condition))
             get(node.trueStatement);
         else if (node.falseStatement != null)
             get(node.falseStatement);
@@ -543,7 +543,7 @@ public final class Interpreter
 
     private Void whileStmt (WhileNode node)
     {
-        while (get(node.condition) != null)
+        while (get(node.condition))
             get(node.body);
         return null;
     }

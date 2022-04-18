@@ -1,38 +1,15 @@
-class FatherClass {
-    var a : Int = 0
+class Car {
+    fun Car () {}
 
-    fun FatherClass(initialVal : Int) {
-        a = initialVal
-    }
-
-    fun parentFunction(niceParam : Int) : Int {
-        return niceParam + a
-    }
-}
-
-class ChildClass sonOf FatherClass {
-
-    fun ChildClass(initialVal : Int) {
-        a = initialVal
-    }
-
-    fun childFunction() : Int {
-        a = parentFunction(4)
-        return a
+    class Engine {
+        var speed : Int = 0
+        fun Engine(){}
+        fun accelerate(){
+            speed = speed + 5
+        }
     }
 }
 
-fun classicalFunction(classicParam : Int) : Int {
-    return classicParam + 1
-}
-
-struct Pair {
-    var a: Int
-    var b: Int
-}
-
-print("Starting execution")
-var instance : FatherClass = ChildClass(10)
-instance.a = instance.a + instance.parentFunction(10)
-print("Value of a : " + instance.a)
-print("If that final line prints, it means that this shit works")
+var engine : Engine = Engine()
+engine.accelerate()
+print("" + engine.speed)
