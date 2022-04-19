@@ -208,17 +208,17 @@ public final class InterpreterTests extends TestFixture {
 
     // ---------------------------------------------------------------------------------------------
 
-//    @Test
-//    public void testVarDecl () {
-//        check("var x: Int = 1; return x", 1L);
-//        check("var x: Float = 2.0; return x", 2d);
-//
-//        check("var x: Int = 0; return x = 3", 3L);
-//        check("var x: String = \"0\"; return x = \"S\"", "S");
-//
-//        // implicit conversions
-//        check("var x: Float = 1; x = 2; return x", 2.0d);
-//    }
+    @Test
+    public void testVarDecl () {
+        check("var x: Int = 1; return x", 1L);
+        check("var x: Float = 2.0; return x", 2d);
+
+        check("var x: Int = 0; return x = 3", 3L);
+        check("var x: String = \"0\"; return x = \"S\"", "S");
+
+        // implicit conversions
+        check("var x: Float = 1; x = 2; return x", 2.0d);
+    }
 
     // ---------------------------------------------------------------------------------------------
 
@@ -244,24 +244,24 @@ public final class InterpreterTests extends TestFixture {
 
     // ---------------------------------------------------------------------------------------------
 
-//    @Test
-//    public void testCalls () {
-//        check(
-//            "fun add (a: Int, b: Int): Int { return a + b } " +
-//                "return add(4, 7)",
-//            11L);
-//
-//        HashMap<String, Object> point = new HashMap<>();
-//        point.put("x", 1L);
-//        point.put("y", 2L);
-//
-//        check(
-//            "struct Point { var x: Int; var y: Int }" +
-//                "return $Point(1, 2)",
-//            point);
-//
-//        check("var str: String = null; return print(str + 1)", "null1", "null1\n");
-//    }
+    @Test
+    public void testCalls () {
+        check(
+            "fun add (a: Int, b: Int): Int { return a + b } " +
+                "return add(4, 7)",
+            11L);
+
+        HashMap<String, Object> point = new HashMap<>();
+        point.put("x", 1L);
+        point.put("y", 2L);
+
+        check(
+            "struct Point { var x: Int; var y: Int }" +
+                "return $Point(1, 2)",
+            point);
+
+        check("var str: String = null; return print(str + 1)", "null1", "null1\n");
+    }
 
     // ---------------------------------------------------------------------------------------------
 
@@ -314,39 +314,39 @@ public final class InterpreterTests extends TestFixture {
 
     // ---------------------------------------------------------------------------------------------
 
-//    @Test
-//    public void testIfWhile () {
-//        check("if (true) return 1 else return 2", 1L);
-//        check("if (false) return 1 else return 2", 2L);
-//        check("if (false) return 1 else if (true) return 2 else return 3 ", 2L);
-//        check("if (false) return 1 else if (false) return 2 else return 3 ", 3L);
-//
-//        check("var i: Int = 0; while (i < 3) { print(\"\" + i); i = i + 1 } ", null, "0\n1\n2\n");
-//    }
+    @Test
+    public void testIfWhile () {
+        check("if (true) return 1 else return 2", 1L);
+        check("if (false) return 1 else return 2", 2L);
+        check("if (false) return 1 else if (true) return 2 else return 3 ", 2L);
+        check("if (false) return 1 else if (false) return 2 else return 3 ", 3L);
+
+        check("var i: Int = 0; while (i < 3) { print(\"\" + i); i = i + 1 } ", null, "0\n1\n2\n");
+    }
 
     // ---------------------------------------------------------------------------------------------
 
-//    @Test
-//    public void testInference () {
-//        check("var array: Int[] = []", null);
-//        check("var array: String[] = []", null);
-//        check("fun use_array (array: Int[]) {} ; use_array([])", null);
-//    }
+    @Test
+    public void testInference () {
+        check("var array: Int[] = []", null);
+        check("var array: String[] = []", null);
+        check("fun use_array (array: Int[]) {} ; use_array([])", null);
+    }
 
     // ---------------------------------------------------------------------------------------------
 
-//    @Test
-//    public void testTypeAsValues () {
-//        check("struct S{} ; return \"\"+ S", "S");
-//        check("struct S{} ; var type: Type = S ; return \"\"+ type", "S");
-//    }
+    @Test
+    public void testTypeAsValues () {
+        check("struct S{} ; return \"\"+ S", "S");
+        check("struct S{} ; var type: Type = S ; return \"\"+ type", "S");
+    }
 
     // ---------------------------------------------------------------------------------------------
 
-/*    @Test public void testUnconditionalReturn()
+    @Test public void testUnconditionalReturn()
     {
         check("fun f(): Int { if (true) return 1 else return 2 } ; return f()", 1L);
-    }*/
+    }
 
     // ---------------------------------------------------------------------------------------------
 
@@ -363,6 +363,20 @@ public final class InterpreterTests extends TestFixture {
         check("class ClassOne { fun ClassOne() {} fun someFunc() : Int { return 0 } } class ClassTwo { fun ClassTwo() {} fun someFunc() : Int { return 1 } } var instance : ClassOne = ClassTwo() var value : Int = instance.someFunc() print(\"\"+value)",null, "1\n");
     }
     // ---------------------------------------------------------------------------------------------
+
+
+    @Test public void testAsync() {
+        // Assignment
+        check("fun async(): Unborn<Int> {var asyncVar: Int = 10 return asyncVar} fun sync(): Int {var syncVar: Int = 20 return syncVar} async() var resultAsync: Int = 0 born(async, resultAsync) var resultSync: Int = sync() print(\"\" + resultAsync) print(\"\" + resultSync)", null, "10\n20\n");
+
+        // Void async
+        
+        // Parameters
+
+        // Unborn with no born
+
+        // Born with no unborn
+    }
 
     // NOTE(norswap): Not incredibly complete, but should cover the basics.
 }

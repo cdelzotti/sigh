@@ -23,12 +23,7 @@ public final class Test
 //        String file = "classes_crosslookup.si";
 //        String file = "inheritance.si";
 //        String file = "classes_examples.si";
-//        String file = "testUnborn.si";
-//        String file = "basic_classes_interpreter.si";
-//        String file = "class_substitution_test.si";
-//        String file = "testIfStatement.si";
-//        String file = "basic_classes_interpreter.si";
-        String file = "variable_overriding.si";
+        String file = "testUnborn2.si";
         String path = Paths.get("examples/", file).toAbsolutePath().toString();
         String src = IO.slurp(path);
         SighGrammar grammar = new SighGrammar();

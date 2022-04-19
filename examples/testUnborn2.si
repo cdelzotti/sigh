@@ -1,0 +1,31 @@
+fun longTask(): Unborn<Int> {
+    var localVar: Int = 0
+    while (localVar < 9999999) {
+        localVar = localVar + 1
+    }
+    return localVar
+}
+
+fun shortTask(): Int {
+var localVar: Int = 0
+    while (localVar < 999) {
+        localVar = localVar + 1
+    }
+    return localVar
+}
+
+// Launching async function
+longTask()
+
+// The instructions below will be executed even if longTask() is still running
+var a: Int = 1
+var b: Int = 2
+print("a + b: " + (a + b))
+
+var shortTaskResult: Int = shortTask()
+print("Short task result: " + shortTaskResult)
+
+// Retrieving result of longTask()
+var longTaskResult: Int = 0
+born(longTask, longTaskResult)
+print("(After some time) Long task result: " + longTaskResult)
