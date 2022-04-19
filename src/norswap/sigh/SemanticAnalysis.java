@@ -496,19 +496,46 @@ public final class SemanticAnalysis
     private void bornExpression (BornNode node) {
         R.set(node, "threadIndex", threadIndex);
         R.set(node, "scope", scope);
+
+        final Scope scope = this.scope;
+
+        // R.rule()
+        // .by(r -> {
+            
+        // });
+
+
+
         R.rule()
         .using(node.function.attr("type"), node.variable.attr("type"))
         .by(r -> {
-            // Check if the function return type to be born is Unborn
-            if (!(((FunType) r.get(0)).returnType instanceof UnbornType))
-                r.error("Trying to born a non-Unborn function.", node);
+            // Check if the function & variable refer effectively to a function and variable declaration
+            DeclarationNode funDecl = scope.lookup(node.function.name).declaration;
+            DeclarationNode varDecl = scope.lookup(node.variable.name).declaration;
 
-            // Check if the variable type matches the Unborn inner type
-            Type componentType = ((UnbornType)((FunType) r.get(0)).returnType).componentType;
-            Type variableType = r.get(1);
-            if(!(componentType.equals(variableType))) {
-                r.error("Variable type does not match the Unborn function inner type (expected " + componentType + " but got " + variableType + ")", node);
+            if (!(funDecl instanceof FunDeclarationNode && varDecl instanceof VarDeclarationNode)) {
 
+                if (!(funDecl instanceof FunDeclarationNode)) {
+                    r.error("First parameter of born node must refer to a declared function.", node);
+                }
+                if (!(varDecl instanceof VarDeclarationNode)) {
+                    r.error("Second parameter of born node must refer to a declared variable.", node);
+                }
+                
+            } else {
+
+                // Check if the function return type to be born is Unborn
+                if (!(((FunType) r.get(0)).returnType instanceof UnbornType))
+                    r.error("Trying to born a non-Unborn function.", node);
+                else {
+                    // Check if the variable type matches the Unborn inner type
+                    Type componentType = ((UnbornType)((FunType) r.get(0)).returnType).componentType;
+                    Type variableType = r.get(1);
+                    if(!(componentType.equals(variableType))) {
+                        r.error("Variable type does not match the Unborn function inner type (expected " + componentType + " but got " + variableType + ")", node);
+
+                    }
+                }
             }
         });
     }

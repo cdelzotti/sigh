@@ -342,7 +342,7 @@ public final class Interpreter
 
     private Object root (RootNode node)
     {
-        assert storage == null;
+        assert storage.get(0) == null;
         rootScope = reactor.get(node, "scope");
         storage.put(0, new ScopeStorage(rootScope, null));
         rootStorage = storage.get(0);
