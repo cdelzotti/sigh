@@ -1,0 +1,18 @@
+class ClassOne {
+    var name: String = "ClassOne"
+
+    fun ClassOne() {}
+
+    fun printName() {
+        print(name);
+    }
+}
+
+class ClassTwo sonOf ClassOne {
+    fun ClassTwo(newName : String) {
+        name = newName
+    }
+}
+
+var instance : ClassOne = ClassTwo("ClassTwo")
+instance.printName()

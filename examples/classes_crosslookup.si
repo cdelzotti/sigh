@@ -20,5 +20,4 @@ class ChildClass sonOf FatherClass {
         a = parentFunction()
         return a
     }
-
 }

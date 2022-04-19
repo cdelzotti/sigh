@@ -1,14 +1,8 @@
 package norswap.sigh.interpreter;
 
 import norswap.sigh.ast.*;
-import norswap.sigh.scopes.DeclarationKind;
-import norswap.sigh.scopes.RootScope;
-import norswap.sigh.scopes.Scope;
-import norswap.sigh.scopes.SyntheticDeclarationNode;
-import norswap.sigh.types.FloatType;
-import norswap.sigh.types.IntType;
-import norswap.sigh.types.StringType;
-import norswap.sigh.types.Type;
+import norswap.sigh.scopes.*;
+import norswap.sigh.types.*;
 import norswap.uranium.Reactor;
 import norswap.utils.Util;
 import norswap.utils.exceptions.Exceptions;
@@ -16,6 +10,7 @@ import norswap.utils.exceptions.NoStackException;
 import norswap.utils.visitors.ValuedVisitor;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static norswap.utils.Util.cast;
@@ -281,6 +276,10 @@ public final class Interpreter
         if (node.left instanceof FieldAccessNode) {
             FieldAccessNode fieldAccess = (FieldAccessNode) node.left;
             Object object = get(fieldAccess.stem);
+            // If it is a Class Instance, extract fields to handle it as a normal struct
+            if (object instanceof ClassInstance) {
+                object = ((ClassInstance) object).fields();
+            }
             if (object == Null.INSTANCE)
                 throw new PassthroughException(
                     new NullPointerException("accessing field of null object"));
@@ -388,6 +387,9 @@ public final class Interpreter
         if (stem == Null.INSTANCE)
             throw new PassthroughException(
                 new NullPointerException("accessing field of null object"));
+        // If it is a Class Instance, extract fields to handle it as a Struct
+        if (stem instanceof ClassInstance)
+            stem = ((ClassInstance) stem).fields();
         return stem instanceof Map
                 ? Util.<Map<String, Object>>cast(stem).get(node.fieldName)
                 : (long) ((Object[]) stem).length; // only field on arrays
@@ -411,21 +413,81 @@ public final class Interpreter
             return buildStruct(((Constructor) decl).declaration, args);
 
         ScopeStorage oldStorage = storage;
-        Scope scope = reactor.get(decl, "scope");
+//        Scope scope = !(decl instanceof ClassDeclarationNode) ?  reactor.get(decl, "scope") : reactor.get(((Scope)reactor.get(decl, "scope")).lookup("<constructor>").declaration, "scope");
+        Scope scope = !(node.function instanceof FieldAccessNode) ?reactor.get(decl, "scope") : ((ClassInstance) get(((FieldAccessNode) node.function).stem)).scope();
         storage = new ScopeStorage(scope, storage);
 
-        FunDeclarationNode funDecl = (FunDeclarationNode) decl;
-        coIterate(args, funDecl.parameters,
-                (arg, param) -> storage.set(scope, param.name, arg));
+        FunDeclarationNode funDecl;
+        ClassInstance returnValue;
+        // Turns a function field access into a classical function call
+        if (node.function instanceof FieldAccessNode) {
+            ClassInstance classInstance = (ClassInstance) get(((FieldAccessNode) node.function).stem);
+            ClassScope classScope = classInstance.scope();
+            funDecl = (FunDeclarationNode) classScope.lookup(((FieldAccessNode) node.function).fieldName).declaration;
+            returnValue = classInstance;
+            // Restore the class scope
+            for (String key : classInstance.fields().keySet()){
+                storage.set(scope, key, classInstance.get_field(key));
+            }
+            // Create a functionScope for parameters
+            Scope functionScope = reactor.get(funDecl, "scope");
+            storage = new ScopeStorage(functionScope, storage);
+            // Register the parameter in the function scope
+            coIterate(args, funDecl.parameters,
+                    (arg, param) -> storage.set(functionScope, param.name, arg));
+        } else if (decl instanceof ClassDeclarationNode) {
+            // Function to execute is the constructor, retrieve the declaration
+            funDecl = (FunDeclarationNode) scope.lookup("<constructor>").declaration;
+            // Add constructor scope on top of the class scope
+            Scope constructorScope = reactor.get(funDecl, "scope");
+            storage = new ScopeStorage(constructorScope, storage);
+            // Must build the instance first
+            ClassType type = (ClassType) reactor.get(decl, "type");
+            ClassInstance instance = new ClassInstance((ClassScope) scope, type);
+            HashMap<String, Type> innerTypes = type.getVariables();
+            for (String key : innerTypes.keySet()) {
+                DeclarationNode declNode = scope.lookup(key).declaration;
+                // Register class variable in the class scope
+                if (declNode instanceof VarDeclarationNode) {
+                    instance.set_field(key, get(((VarDeclarationNode) declNode).initializer));
+                    storage.set(scope, key, instance.get_field(key));
+                }
+            }
+            // Register the parameter in the constructor scope
+            coIterate(args, funDecl.parameters,
+                    (arg, param) -> storage.set(constructorScope, param.name, arg));
+            returnValue = instance;
+        } else{
+            // Normal function call
+            funDecl = (FunDeclarationNode) decl;
+            returnValue = null;
+            coIterate(args, funDecl.parameters,
+                    (arg, param) -> storage.set(scope, param.name, arg));
+        }
 
         try {
             get(funDecl.block);
         } catch (Return r) {
             return r.value;
         } finally {
+            if (returnValue != null){
+                // Find the class scope storage
+                boolean found = false; // Use a boolean to avoid using break, some dogmatic people don't like breaks
+                while (storage != oldStorage && !found) {
+                    if (storage.scope instanceof ClassScope) {
+                        returnValue.refresh(storage);
+                        found = true;
+                    } else {
+                        storage = storage.parent;
+                    }
+                }
+            }
             storage = oldStorage;
+            // If it is a field function access, set return value to null to allow the function to return null
+            if (node.function instanceof FieldAccessNode)
+                returnValue = null;
         }
-        return null;
+        return returnValue;
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -470,7 +532,7 @@ public final class Interpreter
 
     private Void ifStmt (IfNode node)
     {
-        if (get(node.condition) != null)
+        if (get(node.condition))
             get(node.trueStatement);
         else if (node.falseStatement != null)
             get(node.falseStatement);
@@ -481,7 +543,7 @@ public final class Interpreter
 
     private Void whileStmt (WhileNode node)
     {
-        while (get(node.condition) != null)
+        while (get(node.condition))
             get(node.body);
         return null;
     }

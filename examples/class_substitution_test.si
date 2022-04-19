@@ -1,0 +1,22 @@
+class ClassOne {
+
+    fun ClassOne() {}
+
+    fun someFunc() : Int {
+        return 0
+    }
+}
+
+class ClassTwo {
+
+    fun ClassTwo() {}
+
+    fun someFunc() : Int {
+        return 1
+    }
+}
+
+print("Starting execution")
+var instance : ClassOne = ClassTwo()
+var value : Int = instance.someFunc()
+print(""+value)
