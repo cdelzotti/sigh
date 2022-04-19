@@ -1069,9 +1069,10 @@ public final class SemanticAnalysis
                                     path += parentClass.name + " <- ";
                                     if (parentClass.name.equals(node.name)) {
                                         cyclic = true;
+                                    } else {
+                                        ancestors.add(current);
+                                        current = classScope.lookup(parentClass.parent);
                                     }
-                                    ancestors.add(current);
-                                    current = classScope.lookup(parentClass.parent);
                                 }
                                 if (!cyclic) {
                                     r.set(0, ancestors);

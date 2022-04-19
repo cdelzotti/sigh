@@ -232,7 +232,7 @@ public final class SemanticAnalysisTests extends UraniumTestFixture
 
         successInput("var str: String = null; return print(str + 1)");
 
-        failureInputWith("return print(1)", "argument 0: expected String but got Int");
+        failureInputWith("return print(1)", "argument 0 in print: expected String but got Int");
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -280,7 +280,7 @@ public final class SemanticAnalysisTests extends UraniumTestFixture
         failureInputWith(
             "struct P { var x: Int; var y: Int }" +
             "return $P(1, true)",
-            "argument 1: expected Int but got Bool");
+            "argument 1 in $P: expected Int but got Bool");
 
         failureInputWith(
             "struct P { var x: Int; var y: Int }" +
