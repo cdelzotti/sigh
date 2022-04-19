@@ -15,13 +15,33 @@ public class ClassType extends Type
         this.fields = new HashMap<>();
     }
 
-    public boolean addKeys(String name, Type type) {
+    /*
+    *  Add a field to the class type
+    *
+    * @param name the name of the field
+    * @param type the type of the field
+    * @return an error value defining the result of the operation :
+    *         0 if the field doesn't cause any problem
+    *         1 if the field is not overridable
+    *         2 if the field is a classType (overridable) but cannot be assigned to the replaced classType
+    * */
+    public int addKeys(String name, Type type, StringBuilder error) {
         if (!fields.containsKey(name)) {
             fields.put(name, type);
-            return true;
-        } else {
-            return false;
+            return 0;
+        } else if (type instanceof ClassType) {
+//           // TODO : Maybe allows to override classType ?
+//            Type newType = fields.get(name);
+//            ClassType oldType = (ClassType) type;
+//            if (!oldType.canBeAssignedWith(newType, error)){
+//                return 2;
+//            };
+//            return 0;
+            return 1;
+        } else if (type instanceof FunType) {
+         return 0;
         }
+        return 1;
     }
 
     public Type hasField(String name) {
@@ -42,6 +62,9 @@ public class ClassType extends Type
         for (String key : fields.keySet()) {
             // If the other type has a field with the same name,
             // check if it can be assigned to
+            if (key.equals("<constructor>")) {
+                continue;
+            }
             Type currentField = fields.get(key);
             Type otherField = other_class.hasField(key);
             if (otherField == null) {

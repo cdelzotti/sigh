@@ -1,29 +1,15 @@
-class FatherClass {
-    var a : Int = 0
+class ClassOne {
 
-    fun FatherClass(initialVal : Int) {
-        a = initialVal
-    }
+    fun ClassOne() {}
 
     fun someFunc() : Int {
         return 0
     }
-
-    fun parentFunction(niceParam : Int) : Int {
-        return niceParam + a
-    }
 }
 
-class ChildClass sonOf FatherClass {
+class ClassTwo {
 
-    fun ChildClass(initialVal : Int) {
-        a = initialVal
-    }
-
-    fun childFunction() : Int {
-        a = parentFunction(4)
-        return a
-    }
+    fun ClassTwo() {}
 
     fun someFunc() : Int {
         return 1
@@ -31,6 +17,6 @@ class ChildClass sonOf FatherClass {
 }
 
 print("Starting execution")
-var instance : FatherClass = ChildClass(10)
+var instance : ClassOne = ClassTwo()
 var value : Int = instance.someFunc()
 print(""+value)

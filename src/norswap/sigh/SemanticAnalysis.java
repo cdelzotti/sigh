@@ -954,13 +954,20 @@ public final class SemanticAnalysis
             R.rule(node, "type").using(dependencies).by(rr -> {
                 for (int i = 0; i < dependencies.length; i++) {
                     Object value = rr.get(i);
-                    if (value instanceof SemanticError) {ClassScope parentScope;
-
+                    if (value instanceof SemanticError) {
                         rr.errorFor("Found errors in class body: " + node.name,
                                 node, node.attr("type"));
                         return;
                     }
-                    type.addKeys(names.get(i), rr.get(i));
+                    StringBuilder sb = new StringBuilder();
+                    int err = type.addKeys(names.get(i), rr.get(i), sb);
+                    if (err == 1){
+                        rr.errorFor("Cannot override variable : " + names.get(i) + "\n can only override methods.",
+                                node, node.attr("Type"));
+                    } else if (err == 2){
+                        rr.errorFor("Cannot override variable : " + names.get(i) + " : ClassType " + type.hasField(names.get(i)) + " cannot be assigned to " + rr.get(i) +
+                                "(" + sb.toString() + ")", node, node.attr("Type"));
+                    }
                 }
                 rr.set(0, type);
                 ((ClassScope) classScope).setType(type);
