@@ -174,14 +174,20 @@ public class GrammarTests extends AutumnTestFixture {
             new BinaryExpressionNode(null, intlit(1), LOWER, intlit(2)),
             new BlockNode(null, asList(new ReturnNode(null, null)))));
 
-        successExpect("aNiceVar = anotherNiceVar.born({ aNiceVar = 14 })",
-            new ExpressionStatementNode(null,
-                new AssignmentNode(
-                    null,
-                    new ReferenceNode(null, "aNiceVar"), 
-                    new BornNode(null, new ReferenceNode(null, "anotherNiceVar"), new BlockNode(null, asList(new ExpressionStatementNode(null, new AssignmentNode(null, new ReferenceNode(null, "aNiceVar"), intlit(14))))))
-                )
+        successExpect("born(myFunction, myVariable)",
+            new BornNode(
+                null,
+                new ReferenceNode(null, "myFunction"),
+                new ReferenceNode(null, "myVariable")
             )
+        );
+
+        successExpect("born(myFunction)",
+            new BornNode(
+                null,
+                new ReferenceNode(null, "myFunction"),
+                null
+        )
         );
     }
 

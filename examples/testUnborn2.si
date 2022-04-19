@@ -1,0 +1,1 @@
+fun async(): Unborn<Int> {var asyncVar: Int = 10 return asyncVar} fun sync(): Int {var syncVar: Int = 20 return syncVar} async() var resultAsync: Int = 0 born(async, resultAsync) var resultSync: Int = sync() print("" + resultAsync) print("" + resultSync)

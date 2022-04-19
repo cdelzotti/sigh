@@ -137,8 +137,6 @@ public class SighGrammar extends Grammar
         .left(basic_expression)
         .suffix(seq(DOT, identifier),
             $ -> new FieldAccessNode($.span(), $.$[0], $.$[1]))
-        .suffix(seq(DOT, _born, LPAREN, lazy(() -> this.block), RPAREN),
-            $ -> new BornNode($.span(), $.$[0], $.$[1]))
         .suffix(seq(LSQUARE, lazy(() -> this.expression), RSQUARE),
             $ -> new ArrayAccessNode($.span(), $.$[0], $.$[1]))
         .suffix(function_args,
@@ -232,6 +230,7 @@ public class SighGrammar extends Grammar
         this.while_stmt,
         this.return_stmt,
         this.expression_stmt,
+        this.born_stmt,
         this.classDecl));
 
     public rule statements =
@@ -283,6 +282,10 @@ public class SighGrammar extends Grammar
     public rule return_stmt =
         seq(_return, expression.or_push_null())
         .push($ -> new ReturnNode($.span(), $.$[0]));
+
+    public rule born_stmt =
+        seq(_born, LPAREN, expression, seq(COMMA, expression).or_push_null(), RPAREN)
+        .push($ -> new BornNode($.span(), $.$[0], $.$[1]));
 
     public rule maybe_classInheritence = seq(_sonOf, identifier).or_push_null();
 

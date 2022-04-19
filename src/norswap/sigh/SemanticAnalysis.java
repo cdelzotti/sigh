@@ -89,6 +89,9 @@ public final class SemanticAnalysis
     /** Index of the current function argument. */
     private int argumentIndex;
 
+    /** Index of the current thread */
+    private int threadIndex = 0;
+
     // ---------------------------------------------------------------------------------------------
 
     private SemanticAnalysis(Reactor reactor) {
@@ -181,6 +184,7 @@ public final class SemanticAnalysis
     private void reference (ReferenceNode node)
     {
         final Scope scope = this.scope;
+        R.set(node, "threadIndex", threadIndex);
 
         // Try to lookup immediately. This must succeed for variables, but not necessarily for
         // functions or types. By looking up now, we can report looked up variables later
@@ -414,6 +418,7 @@ public final class SemanticAnalysis
     private void funCall (FunCallNode node)
     {
         this.inferenceContext = node;
+        R.set(node, "threadIndex", threadIndex);
 
         Attribute[] dependencies = new Attribute[node.arguments.size() + 1];
         dependencies[0] = node.function.attr("type");
@@ -489,15 +494,21 @@ public final class SemanticAnalysis
     // ---------------------------------------------------------------------------------------------
 
     private void bornExpression (BornNode node) {
-        
-        // Check if the variable we are trying to born is of type Unborn
-        R.rule(node.attr("type"))
-        .using(node.reference.attr("type"))
+        R.set(node, "threadIndex", threadIndex);
+        R.set(node, "scope", scope);
+        R.rule()
+        .using(node.function.attr("type"), node.variable.attr("type"))
         .by(r -> {
-            if (!(r.get(0) instanceof UnbornType))
-                r.error("Trying to Born a non-Unborn variable.", node);
-            else {
-                r.set(0, ((UnbornType) r.get(0)).componentType);
+            // Check if the function return type to be born is Unborn
+            if (!(((FunType) r.get(0)).returnType instanceof UnbornType))
+                r.error("Trying to born a non-Unborn function.", node);
+
+            // Check if the variable type matches the Unborn inner type
+            Type componentType = ((UnbornType)((FunType) r.get(0)).returnType).componentType;
+            Type variableType = r.get(1);
+            if(!(componentType.equals(variableType))) {
+                r.error("Variable type does not match the Unborn function inner type (expected " + componentType + " but got " + variableType + ")", node);
+
             }
         });
     }
@@ -615,6 +626,7 @@ public final class SemanticAnalysis
 
     private void assignment (AssignmentNode node)
     {
+        R.set(node, "threadIndex", threadIndex);
         R.rule(node, "type")
         .using(node.left.attr("type"), node.right.attr("type"))
         .by(r -> {
@@ -783,6 +795,10 @@ public final class SemanticAnalysis
 
     private void popScope (SighNode node) {
         scope = scope.parent;
+
+        if (node instanceof FunDeclarationNode) {
+            threadIndex = 0;
+        }
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -798,6 +814,7 @@ public final class SemanticAnalysis
     private void block (BlockNode node) {
         scope = new Scope(node, scope);
         R.set(node, "scope", scope);
+        R.set(node, "threadIndex", threadIndex);
 
         Attribute[] deps = getReturnsDependencies(node.statements);
         R.rule(node, "returns")
@@ -810,6 +827,7 @@ public final class SemanticAnalysis
     private void varDecl (VarDeclarationNode node)
     {
         this.inferenceContext = node;
+        R.set(node, "threadIndex", threadIndex);
 
         scope.declare(node.name, node);
         R.set(node, "scope", scope);
@@ -873,9 +891,16 @@ public final class SemanticAnalysis
                 node.name = "<constructor>";
             }
         }
+
+        // Check if the declared function is async
+        if (node.returnType instanceof UnbornTypeNode) {
+            threadIndex = node.hashCode();
+        }
+
         scope.declare(node.name, node);
         scope = new Scope(node, scope);
         R.set(node, "scope", scope);
+        R.set(node, "threadIndex", threadIndex);
 
         Attribute[] dependencies = new Attribute[node.parameters.size() + 1];
         dependencies[0] = node.returnType.attr("value");
@@ -1072,6 +1097,7 @@ public final class SemanticAnalysis
     private void returnStmt (ReturnNode node)
     {
         R.set(node, "returns", true);
+        R.set(node, "threadIndex", threadIndex);
 
         FunDeclarationNode function = currentFunction();
         if (function == null) // top-level return

@@ -362,5 +362,20 @@ public final class InterpreterTests extends TestFixture {
     }
     // ---------------------------------------------------------------------------------------------
 
+
+    @Test public void testAsync() {
+        // Assignment
+        check("fun async(): Unborn<Int> {var asyncVar: Int = 10 return asyncVar} fun sync(): Int {var syncVar: Int = 20 return syncVar} async() var resultAsync: Int = 0 born(async, resultAsync) var resultSync: Int = sync() print(\"\" + resultAsync) print(\"\" + resultSync)", null, "10\n20");
+
+
+        // Void async
+
+        // Parameters
+
+        // Unborn with no born
+
+        // Born with no unborn
+    }
+
     // NOTE(norswap): Not incredibly complete, but should cover the basics.
 }

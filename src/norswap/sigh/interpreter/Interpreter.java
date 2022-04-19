@@ -46,9 +46,11 @@ public final class Interpreter
 
     private final ValuedVisitor<SighNode, Object> visitor = new ValuedVisitor<>();
     private final Reactor reactor;
-    private ScopeStorage storage = null;
+    private HashMap<Integer, ScopeStorage> storage = new HashMap<>();
     private RootScope rootScope;
     private ScopeStorage rootStorage;
+    private HashMap<String, Thread> threadPool = new HashMap<>();
+    private HashMap<Integer, Object> returnValues = new HashMap<>();
 
     // ---------------------------------------------------------------------------------------------
 
@@ -81,6 +83,7 @@ public final class Interpreter
         visitor.register(IfNode.class,                   this::ifStmt);
         visitor.register(WhileNode.class,                this::whileStmt);
         visitor.register(ReturnNode.class,               this::returnStmt);
+        visitor.register(BornNode.class,                 this::bornStmt);
 
         visitor.registerFallback(node -> null);
     }
@@ -258,7 +261,7 @@ public final class Interpreter
             Scope scope = reactor.get(node.left, "scope");
             String name = ((ReferenceNode) node.left).name;
             Object rvalue = get(node.right);
-            assign(scope, name, rvalue, reactor.get(node, "type"));
+            assign(scope, name, rvalue, reactor.get(node, "type"), reactor.get(node, "threadIndex"));
             return rvalue;
         }
 
@@ -341,8 +344,9 @@ public final class Interpreter
     {
         assert storage == null;
         rootScope = reactor.get(node, "scope");
-        storage = rootStorage = new ScopeStorage(rootScope, null);
-        storage.initRoot(rootScope);
+        storage.put(0, new ScopeStorage(rootScope, null));
+        rootStorage = storage.get(0);
+        storage.get(0).initRoot(rootScope);
 
         try {
             node.statements.forEach(this::run);
@@ -359,9 +363,10 @@ public final class Interpreter
 
     private Void block (BlockNode node) {
         Scope scope = reactor.get(node, "scope");
-        storage = new ScopeStorage(scope, storage);
+        int threadIndex = reactor.get(node, "threadIndex");
+        storage.put(threadIndex, new ScopeStorage(scope, storage.get(threadIndex)));
         node.statements.forEach(this::run);
-        storage = storage.parent;
+        storage.put(threadIndex, storage.get(threadIndex).parent);
         return null;
     }
 
@@ -402,6 +407,7 @@ public final class Interpreter
         Object decl = get(node.function);
         node.arguments.forEach(this::run);
         Object[] args = map(node.arguments, new Object[0], visitor);
+        int threadIndex = reactor.get(node, "threadIndex");
 
         if (decl == Null.INSTANCE)
             throw new PassthroughException(new NullPointerException("calling a null function"));
@@ -412,11 +418,12 @@ public final class Interpreter
         if (decl instanceof Constructor)
             return buildStruct(((Constructor) decl).declaration, args);
 
-        ScopeStorage oldStorage = storage;
+        ScopeStorage oldStorage = storage.get(threadIndex);
 //        Scope scope = !(decl instanceof ClassDeclarationNode) ?  reactor.get(decl, "scope") : reactor.get(((Scope)reactor.get(decl, "scope")).lookup("<constructor>").declaration, "scope");
         Scope scope = !(node.function instanceof FieldAccessNode) ?reactor.get(decl, "scope") : ((ClassInstance) get(((FieldAccessNode) node.function).stem)).scope();
-        storage = new ScopeStorage(scope, storage);
+        storage.put(threadIndex, new ScopeStorage(scope, storage.get(threadIndex)));
 
+        boolean async = false;
         FunDeclarationNode funDecl;
         ClassInstance returnValue;
         // Turns a function field access into a classical function call
@@ -427,20 +434,20 @@ public final class Interpreter
             returnValue = classInstance;
             // Restore the class scope
             for (String key : classInstance.fields().keySet()){
-                storage.set(scope, key, classInstance.get_field(key));
+                storage.get(threadIndex).set(scope, key, classInstance.get_field(key));
             }
             // Create a functionScope for parameters
             Scope functionScope = reactor.get(funDecl, "scope");
-            storage = new ScopeStorage(functionScope, storage);
+            storage.put(threadIndex, new ScopeStorage(functionScope, storage.get(threadIndex)));
             // Register the parameter in the function scope
             coIterate(args, funDecl.parameters,
-                    (arg, param) -> storage.set(functionScope, param.name, arg));
+                    (arg, param) -> storage.get(threadIndex).set(functionScope, param.name, arg));
         } else if (decl instanceof ClassDeclarationNode) {
             // Function to execute is the constructor, retrieve the declaration
             funDecl = (FunDeclarationNode) scope.lookup("<constructor>").declaration;
             // Add constructor scope on top of the class scope
             Scope constructorScope = reactor.get(funDecl, "scope");
-            storage = new ScopeStorage(constructorScope, storage);
+            storage.put(threadIndex, new ScopeStorage(constructorScope, storage.get(threadIndex)));
             // Must build the instance first
             ClassType type = (ClassType) reactor.get(decl, "type");
             ClassInstance instance = new ClassInstance((ClassScope) scope, type);
@@ -450,39 +457,50 @@ public final class Interpreter
                 // Register class variable in the class scope
                 if (declNode instanceof VarDeclarationNode) {
                     instance.set_field(key, get(((VarDeclarationNode) declNode).initializer));
-                    storage.set(scope, key, instance.get_field(key));
+                    storage.get(threadIndex).set(scope, key, instance.get_field(key));
                 }
             }
             // Register the parameter in the constructor scope
             coIterate(args, funDecl.parameters,
-                    (arg, param) -> storage.set(constructorScope, param.name, arg));
+                    (arg, param) -> storage.get(threadIndex).set(constructorScope, param.name, arg));
             returnValue = instance;
-        } else{
+        } else {
             // Normal function call
             funDecl = (FunDeclarationNode) decl;
+            async = funDecl.returnType instanceof UnbornTypeNode;
             returnValue = null;
             coIterate(args, funDecl.parameters,
-                    (arg, param) -> storage.set(scope, param.name, arg));
+                    (arg, param) -> storage.get(threadIndex).set(scope, param.name, arg));
         }
 
         try {
-            get(funDecl.block);
+            if (async) {
+                Thread newThread = new Thread(() -> {
+                    get(funDecl.block);
+                });
+
+                // Add the thread to the thread pool
+                threadPool.put(funDecl.name, newThread);
+                newThread.start();
+            } else {
+                get(funDecl.block);
+            }
         } catch (Return r) {
             return r.value;
         } finally {
             if (returnValue != null){
                 // Find the class scope storage
                 boolean found = false; // Use a boolean to avoid using break, some dogmatic people don't like breaks
-                while (storage != oldStorage && !found) {
-                    if (storage.scope instanceof ClassScope) {
-                        returnValue.refresh(storage);
+                while (storage.get(threadIndex) != oldStorage && !found) {
+                    if (storage.get(threadIndex).scope instanceof ClassScope) {
+                        returnValue.refresh(storage.get(threadIndex));
                         found = true;
                     } else {
-                        storage = storage.parent;
+                        storage.put(threadIndex, storage.get(threadIndex).parent);
                     }
                 }
             }
-            storage = oldStorage;
+            storage.put(threadIndex, oldStorage);
             // If it is a field function access, set return value to null to allow the function to return null
             if (node.function instanceof FieldAccessNode)
                 returnValue = null;
@@ -532,7 +550,7 @@ public final class Interpreter
 
     private Void ifStmt (IfNode node)
     {
-        if (get(node.condition))
+        if ((boolean) get(node.condition))
             get(node.trueStatement);
         else if (node.falseStatement != null)
             get(node.falseStatement);
@@ -543,7 +561,7 @@ public final class Interpreter
 
     private Void whileStmt (WhileNode node)
     {
-        while (get(node.condition))
+        while ((boolean) get(node.condition))
             get(node.body);
         return null;
     }
@@ -554,6 +572,7 @@ public final class Interpreter
     {
         Scope scope = reactor.get(node, "scope");
         DeclarationNode decl = reactor.get(node, "decl");
+        int threadIndex = reactor.get(node, "threadIndex");
 
         if (decl instanceof VarDeclarationNode
         || decl instanceof ParameterNode
@@ -561,7 +580,7 @@ public final class Interpreter
                 && ((SyntheticDeclarationNode) decl).kind() == DeclarationKind.VARIABLE)
             return scope == rootScope
                 ? rootStorage.get(scope, node.name)
-                : storage.get(scope, node.name);
+                : storage.get(threadIndex).get(scope, node.name);
 
         return decl; // structure or function
     }
@@ -569,25 +588,54 @@ public final class Interpreter
     // ---------------------------------------------------------------------------------------------
 
     private Void returnStmt (ReturnNode node) {
-        throw new Return(node.expression == null ? null : get(node.expression));
+        int threadIndex = reactor.get(node, "threadIndex");
+        if (threadIndex == 0) {
+            // Normal functions
+            throw new Return(node.expression == null ? null : get(node.expression));
+        } else {
+            // Async functions
+            returnValues.put(threadIndex, node.expression == null ? null : get(node.expression));
+            return null;
+        }
+        
     }
 
+    // ---------------------------------------------------------------------------------------------
+
+    private Void bornStmt (BornNode node) {
+        try {
+            threadPool.get(node.function.name).join();
+
+            Scope scope = reactor.get(node, "scope");
+            VarDeclarationNode varDecl = (VarDeclarationNode) scope.lookup(node.variable.name).declaration;
+            FunDeclarationNode funDecl = (FunDeclarationNode) scope.lookup(node.function.name).declaration;
+            int threadIndex = reactor.get(funDecl, "threadIndex");
+            int nodeThreadIndex = reactor.get(node, "threadIndex");
+
+            assign(scope, node.variable.name, returnValues.get(threadIndex), reactor.get(varDecl, "type"), nodeThreadIndex);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+        
     // ---------------------------------------------------------------------------------------------
 
     private Void varDecl (VarDeclarationNode node)
     {
         Scope scope = reactor.get(node, "scope");
-        assign(scope, node.name, get(node.initializer), reactor.get(node, "type"));
+        int threadIndex = reactor.get(node, "threadIndex");
+        assign(scope, node.name, get(node.initializer), reactor.get(node, "type"), threadIndex);
         return null;
     }
 
     // ---------------------------------------------------------------------------------------------
 
-    private void assign (Scope scope, String name, Object value, Type targetType)
+    private void assign (Scope scope, String name, Object value, Type targetType, int threadIndex)
     {
         if (value instanceof Long && targetType instanceof FloatType)
             value = ((Long) value).doubleValue();
-        storage.set(scope, name, value);
+        storage.get(threadIndex).set(scope, name, value);
     }
 
     // ---------------------------------------------------------------------------------------------
