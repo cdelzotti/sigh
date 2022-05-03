@@ -53,6 +53,7 @@ public class ClassType extends Type
     }
 
     public boolean canBeAssignedWith(Type other, StringBuilder error) {
+
         if (!(other instanceof ClassType)) {
             error.append("Cannot assign ").append(other).append(" to ").append(this);
             return false;

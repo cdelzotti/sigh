@@ -614,6 +614,7 @@ public final class Interpreter
 
             assign(scope, node.variable.name, returnValues.get(threadIndex), reactor.get(varDecl, "type"), nodeThreadIndex);
         } catch (InterruptedException e) {
+
             e.printStackTrace();
         }
         return null;

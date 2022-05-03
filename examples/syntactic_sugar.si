@@ -4,7 +4,10 @@ var k: Int = 17
 var l : Int = 17
 var m : Int = 17
 var n : Int = 17
-var o : Int = 16
+var o : Int = 17
+var p : Auto = 9
+p = "Coucou"
+
 i++
 j--
 k += 9

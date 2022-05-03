@@ -666,25 +666,14 @@ public final class SemanticAnalysis
             ||  node.left instanceof FieldAccessNode
             ||  node.left instanceof ArrayAccessNode) {
                 if (left instanceof ClassType){
-//                    if (!(right instanceof ClassType)){
-//                        r.errorFor("Attempting to assign non-class type to class type", node.right);
-//                        return;
-//                    }
-//                    R.rule()
-//                    .using(node.left.attr("scope"), node.right.attr("scope"))
-//                    .by(rr -> {
-//                        ClassScope leftScope  = (ClassScope) rr.get(0);
-//                        ClassScope rightScope = (ClassScope) rr.get(1);
-//
-//                    });
-
                     StringBuilder sb = new StringBuilder();
                     boolean assignable = ((ClassType) left).canBeAssignedWith(right, sb);
                     if (!assignable)
                         r.errorFor(sb.toString(), node.left);
                 } else {
                     if (!isAssignableTo(right, left))
-                            r.errorFor("Trying to assign a value to a non-compatible lvalue.", node);
+                            r.errorFor(format("Trying to assign %s with a non-compatible value. Expected %s but got %s",
+                                    node.left, left, right), node);
                 }
             }
             else
@@ -763,6 +752,7 @@ public final class SemanticAnalysis
      */
     private static boolean isAssignableTo (Type a, Type b)
     {
+        if (b instanceof  AutoType) return true;
 
         if (a instanceof VoidType || b instanceof VoidType)
             return false;
@@ -859,15 +849,21 @@ public final class SemanticAnalysis
         scope.declare(node.name, node);
         R.set(node, "scope", scope);
 
-        R.rule(node, "type")
-        .using(node.type, "value")
-        .by(Rule::copyFirst);
+//        R.rule(node, "type")
+//        .using(node.type, "value")
+//        .by(Rule::copyFirst);
 
-        R.rule()
+        R.rule(node, "type")
         .using(node.type.attr("value"), node.initializer.attr("type"))
         .by(r -> {
             Type expected = r.get(0);
             Type actual = r.get(1);
+
+            if (expected instanceof AutoType) {
+                r.set(0, actual);
+            } else {
+                r.set(0, expected);
+            }
 
             if (expected instanceof ClassType){
                 StringBuilder sb = new StringBuilder();
