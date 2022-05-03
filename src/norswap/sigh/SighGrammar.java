@@ -93,7 +93,9 @@ public class SighGrammar extends Grammar
 
     public rule identifier =
         identifier(seq(choice(alpha, '_'), id_part.at_least(0)))
-        .push($ -> $.str());
+        .push($ -> {
+            return $.str();
+        });
     
     // ==== SYNTACTIC =========================================================
     
@@ -189,6 +191,44 @@ public class SighGrammar extends Grammar
         .infix(BAR_BAR.as_val(BinaryOperator.OR),
             $ -> new BinaryExpressionNode($.span(), $.$[0], $.$[1], $.$[2]));
 
+    /* Syntactic sugar */
+    public rule quick_increment = seq(identifier, PLUS, PLUS).push(ctx -> {
+        return  new AssignmentNode(ctx.span(),
+                new ReferenceNode(ctx.span(), ctx.$0()),
+                new BinaryExpressionNode(ctx.span(),
+                        new ReferenceNode(ctx.span(), ctx.$0()),
+                        BinaryOperator.ADD,
+                        new IntLiteralNode(ctx.span(), 1)
+                )
+        );
+    });
+
+    public rule quick_decrement = seq(identifier, MINUS, MINUS).push(ctx -> {
+        return  new AssignmentNode(ctx.span(),
+                        new ReferenceNode(ctx.span(), ctx.$0()),
+                        new BinaryExpressionNode(ctx.span(),
+                                new ReferenceNode(ctx.span(), ctx.$0()),
+                                BinaryOperator.SUBTRACT,
+                                new IntLiteralNode(ctx.span(), 1)
+                        )
+                );
+        });
+
+    public rule quick_reasignment = seq(identifier, choice(add_op, mult_op), EQUALS, or_expression).push(ctx -> {
+        return  new AssignmentNode(ctx.span(),
+                new ReferenceNode(ctx.span(), ctx.$0()),
+                new BinaryExpressionNode(ctx.span(),
+                        new ReferenceNode(ctx.span(), ctx.$0()),
+                        ctx.$1(),
+                        ctx.$2()
+                    )
+                );
+    });
+
+    public rule quick_expression = choice(quick_increment, quick_decrement, quick_reasignment).push(ctx -> {
+        return new ExpressionStatementNode(ctx.span(), ctx.$0());
+    });
+
     public rule assignment_expression = right_expression()
         .operand(or_expression)
         .infix(EQUALS,
@@ -230,6 +270,7 @@ public class SighGrammar extends Grammar
         this.while_stmt,
         this.return_stmt,
         this.expression_stmt,
+        this.quick_expression,
         this.born_stmt,
         this.classDecl));
 
@@ -302,6 +343,8 @@ public class SighGrammar extends Grammar
     public rule classDecl = seq(classHeader, class_body).push(ctx -> {
         return new ClassDeclarationNode(ctx.span(), ctx.$0(), ctx.$1(), ctx.$2());
     });
+
+
 
     public rule root =
         seq(ws, statement.at_least(1))

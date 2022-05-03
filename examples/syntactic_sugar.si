@@ -1,0 +1,22 @@
+var i: Int = 17
+var j: Int = 17
+var k: Int = 17
+var l : Int = 17
+var m : Int = 17
+var n : Int = 17
+var o : Int = 16
+i++
+j--
+k += 9
+l -= 9
+m *= 2
+n /= 3
+o %= 2
+
+print(""+i)
+print(""+j)
+print(""+k)
+print(""+l)
+print(""+m)
+print(""+n)
+print(""+o)
