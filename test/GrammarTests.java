@@ -137,6 +137,88 @@ public class GrammarTests extends AutumnTestFixture {
             )
         );
 
+        // Quick increment
+        successExpect("i++",
+                new ExpressionStatementNode(null,
+                new AssignmentNode(null,
+                new ReferenceNode(null, "i"),
+                new BinaryExpressionNode(null,
+                        new ReferenceNode(null, "i"),
+                        BinaryOperator.ADD,
+                        new IntLiteralNode(null, 1)
+                )
+        )));
+
+        // Quick decrement
+        successExpect("i--",
+                new ExpressionStatementNode(null,
+                        new AssignmentNode(null,
+                                new ReferenceNode(null, "i"),
+                                new BinaryExpressionNode(null,
+                                        new ReferenceNode(null, "i"),
+                                        SUBTRACT,
+                                        new IntLiteralNode(null, 1)
+                                )
+        )));
+
+        // Quick addition
+        successExpect("i += 12",
+                new ExpressionStatementNode(null,
+                        new AssignmentNode(null,
+                                new ReferenceNode(null, "i"),
+                                new BinaryExpressionNode(null,
+                                        new ReferenceNode(null, "i"),
+                                        ADD,
+                                        new IntLiteralNode(null, 12)
+                                )
+                        )));
+        // Quick subtraction
+        successExpect("i -= 12",
+                new ExpressionStatementNode(null,
+                        new AssignmentNode(null,
+                                new ReferenceNode(null, "i"),
+                                new BinaryExpressionNode(null,
+                                        new ReferenceNode(null, "i"),
+                                        SUBTRACT,
+                                        new IntLiteralNode(null, 12)
+                                )
+                        )));
+        // Quick multiplication
+        successExpect("i *= 12",
+                new ExpressionStatementNode(null,
+                        new AssignmentNode(null,
+                                new ReferenceNode(null, "i"),
+                                new BinaryExpressionNode(null,
+                                        new ReferenceNode(null, "i"),
+                                        MULTIPLY,
+                                        new IntLiteralNode(null, 12)
+                                )
+                )));
+
+        // Quick division
+        successExpect("i /= 12",
+                new ExpressionStatementNode(null,
+                        new AssignmentNode(null,
+                                new ReferenceNode(null, "i"),
+                                new BinaryExpressionNode(null,
+                                        new ReferenceNode(null, "i"),
+                                        DIVIDE,
+                                        new IntLiteralNode(null, 12)
+                                )
+                        )));
+
+        // ciblingsOf operator
+        successExpect("var a : Bool = i ciblingsOf j",
+                new VarDeclarationNode(null,
+                        "a",
+                        new SimpleTypeNode(null, "Bool"),
+                        new BinaryExpressionNode(null,
+                            new ReferenceNode(null, "i"),
+                            CIBLINGS,
+                            new ReferenceNode(null, "j")
+                        )
+        ));
+
         successExpect("var aNiceVar: Unborn<Int> = myFunc()",
             new VarDeclarationNode(
                 null, 

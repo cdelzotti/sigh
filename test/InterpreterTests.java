@@ -364,6 +364,30 @@ public final class InterpreterTests extends TestFixture {
     }
     // ---------------------------------------------------------------------------------------------
 
+    @Test public void testSugar(){
+        // Rapid increment
+        check("var i : Int = 0  i++ print(\"\"+i)",null, "1\n");
+        // Rapid decrement
+        check("var i : Int = 1  i-- print(\"\"+i)",null, "0\n");
+        // Rapid addition
+        check("var i : Int = 0  i += 12 print(\"\"+i)",null, "12\n");
+        // Rapid subtraction
+        check("var i : Int = 12  i -= 12 print(\"\"+i)",null, "0\n");
+        // Rapid multiplication
+        check("var i : Int = 2  i *= 12 print(\"\"+i)",null, "24\n");
+        // Rapid division
+        check("var i : Int = 12  i /= 12 print(\"\"+i)",null, "1\n");
+        // ciblingsOf working with heritage
+        check("class A { fun A(){} } class B sonOf A { fun B(){}} var a : Auto = A() var b : Auto = B() if (a ciblingsOf b) print(\"working\") else print(\"crashing\")",null, "working\n");
+        // ciblingsOf working with duck typing
+        check("class A { var i : Int = 12  fun A(){} } class B { var i : Int = 23 fun B(){}} var a : Auto = A() var b : Auto = B() if (a ciblingsOf b) print(\"working\") else print(\"crashing\")",null, "working\n");
+        // ciblingOf not working
+        check("class A { var k : Int = 12  fun A(){} } class B { var i : Int = 23 fun B(){}} var a : Auto = A() var b : Auto = B() if (a ciblingsOf b) print(\"working\") else print(\"crashing\")",null, "crashing\n");
+
+    }
+
+    // ---------------------------------------------------------------------------------------------
+
 
     @Test public void testAsync() {
         // Assignment
