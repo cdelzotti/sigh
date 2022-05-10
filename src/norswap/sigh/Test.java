@@ -24,7 +24,7 @@ public final class Test
 //        String file = "inheritance.si";
 //        String file = "classes_examples.si";
 //        String file = "cyclicClasses.si";
-        String file = "syntactic_sugar.si";
+        String file = "ciblingsof.si";
         String path = Paths.get("examples/", file).toAbsolutePath().toString();
         String src = IO.slurp(path);
         SighGrammar grammar = new SighGrammar();

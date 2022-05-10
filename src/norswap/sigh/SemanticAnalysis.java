@@ -555,6 +555,8 @@ public final class SemanticAnalysis
 
             if (node.operator == ADD && (left instanceof StringType || right instanceof StringType))
                 r.set(0, StringType.INSTANCE);
+            else if (node.operator == CIBLINGS)
+                ciblingsCheck(r,node, left, right);
             else if (isArithmetic(node.operator))
                 binaryArithmetic(r, node, left, right);
             else if (isComparison(node.operator))
@@ -565,6 +567,17 @@ public final class SemanticAnalysis
                 binaryEquality(r, node, left, right);
         });
     }
+
+    // ---------------------------------------------------------------------------------------------
+
+    private void ciblingsCheck (Rule r, BinaryExpressionNode node, Type left, Type right)
+    {
+        if (!(left instanceof ClassType && right instanceof ClassType)) {
+            r.error("Trying to check if two non-classes are siblings.", node);
+        }
+        r.set(0, BoolType.INSTANCE);
+    }
+
 
     // ---------------------------------------------------------------------------------------------
 

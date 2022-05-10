@@ -170,6 +170,9 @@ public final class Interpreter
         Object left  = get(node.left);
         Object right = get(node.right);
 
+        if (node.operator == BinaryOperator.CIBLINGS)
+            return ((ClassInstance) left).type().canBeAssignedWith(((ClassInstance) right).type(), new StringBuilder());
+
         if (node.operator == BinaryOperator.ADD
                 && (leftType instanceof StringType || rightType instanceof StringType))
             return convertToString(left) + convertToString(right);

@@ -51,6 +51,7 @@ public class SighGrammar extends Grammar
     public rule DOT             = word(".");
     public rule DOLLAR          = word("$");
     public rule COMMA           = word(",");
+    public rule CIBLINGS        = word("ciblingsOf");
 
     public rule _var            = reserved("var");
     public rule _fun            = reserved("fun");
@@ -164,7 +165,8 @@ public class SighGrammar extends Grammar
         LANGLE_EQUAL.as_val(BinaryOperator.LOWER_EQUAL),
         RANGLE_EQUAL.as_val(BinaryOperator.GREATER_EQUAL),
         LANGLE      .as_val(BinaryOperator.LOWER),
-        RANGLE      .as_val(BinaryOperator.GREATER));
+        RANGLE      .as_val(BinaryOperator.GREATER),
+        CIBLINGS    .as_val(BinaryOperator.CIBLINGS));
 
     public rule mult_expr = left_expression()
         .operand(prefix_expression)
