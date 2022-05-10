@@ -139,12 +139,14 @@ public final class SemanticAnalysis
         walker.register(FieldDeclarationNode.class,     PRE_VISIT,  analysis::fieldDecl);
         walker.register(ParameterNode.class,            PRE_VISIT,  analysis::parameter);
         walker.register(FunDeclarationNode.class,       PRE_VISIT,  analysis::funDecl);
+        walker.register(MethodDeclarationNode.class,    PRE_VISIT,  analysis::funDecl);
         walker.register(StructDeclarationNode.class,    PRE_VISIT,  analysis::structDecl);
         walker.register(ClassDeclarationNode.class,     PRE_VISIT,  analysis::classDecl);
 
         walker.register(RootNode.class,                 POST_VISIT, analysis::popScope);
         walker.register(BlockNode.class,                POST_VISIT, analysis::popScope);
         walker.register(FunDeclarationNode.class,       POST_VISIT, analysis::popScope);
+        walker.register(MethodDeclarationNode.class,    POST_VISIT, analysis::popScope);
         walker.register(ClassDeclarationNode.class,     POST_VISIT, analysis::popScope);
 
         // statements

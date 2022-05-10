@@ -332,9 +332,13 @@ public class SighGrammar extends Grammar
 
     public rule maybe_classInheritence = seq(_sonOf, identifier).or_push_null();
 
+    public rule method_decl =
+            seq(_fun, identifier, LPAREN, parameters, RPAREN, maybe_return_type, block)
+                    .push($ -> new MethodDeclarationNode($.span(), $.$[0], $.$[1], $.$[2], $.$[3]));
+
     public rule class_body_available_decl= lazy(() -> choice(
             this.var_decl,
-            this.fun_decl,
+            this.method_decl,
             this.struct_decl,
             this.classDecl));
 
