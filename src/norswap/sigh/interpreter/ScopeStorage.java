@@ -38,12 +38,13 @@ public final class ScopeStorage
      */
     Object get (Scope scope, String name)
     {
-        if (scope.equals(this.scope))
+        if (scope.equals(this.scope)) {
             return values.get(name);
-        else if (parent != null)
+        } else if (parent != null) {
             return parent.get(scope, name);
-        else
+        } else {
             throw new Error("[implementation bug] could not lookup name: " + name);
+        }
     }
 
     // ---------------------------------------------------------------------------------------------

@@ -93,7 +93,7 @@ public final class Interpreter
     public Object interpret (SighNode root) {
         try {
             return run(root);
-        } catch (PassthroughException e) {
+        } catch (PassthroughException | BornNodeException e) {
             throw Exceptions.runtime(e.getCause());
         }
     }
@@ -604,17 +604,22 @@ public final class Interpreter
 
     private Void bornStmt (BornNode node) {
         try {
-            threadPool.get(node.function.name).join();
+            Thread thread = threadPool.get(node.function.name);
 
-            Scope scope = reactor.get(node, "scope");
-            VarDeclarationNode varDecl = (VarDeclarationNode) scope.lookup(node.variable.name).declaration;
-            FunDeclarationNode funDecl = (FunDeclarationNode) scope.lookup(node.function.name).declaration;
-            int threadIndex = reactor.get(funDecl, "threadIndex");
-            int nodeThreadIndex = reactor.get(node, "threadIndex");
+            if (thread == null) {
+                throw new BornNodeException("exception while executing born node " + node, new NullPointerException("Thread does not exist in Threadpool"));
+            }
 
-            assign(scope, node.variable.name, returnValues.get(threadIndex), reactor.get(varDecl, "type"), nodeThreadIndex);
+            thread.join();
+            if (!(node.variable == null)) {
+                Scope scope = reactor.get(node, "scope");
+                VarDeclarationNode varDecl = (VarDeclarationNode) scope.lookup(node.variable.name).declaration;
+                FunDeclarationNode funDecl = (FunDeclarationNode) scope.lookup(node.function.name).declaration;
+                int threadIndex = reactor.get(funDecl, "threadIndex");
+                int nodeThreadIndex = reactor.get(node, "threadIndex");
+                assign(scope, node.variable.name, returnValues.get(threadIndex), reactor.get(varDecl, "type"), nodeThreadIndex);
+            }
         } catch (InterruptedException e) {
-            e.printStackTrace();
         }
         return null;
     }

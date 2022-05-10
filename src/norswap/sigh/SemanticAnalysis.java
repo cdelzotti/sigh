@@ -499,41 +499,43 @@ public final class SemanticAnalysis
 
         final Scope scope = this.scope;
 
-        // R.rule()
-        // .by(r -> {
-            
-        // });
-
-
-
         R.rule()
-        .using(node.function.attr("type"), node.variable.attr("type"))
+        .using(node.function.attr("type"))
         .by(r -> {
-            // Check if the function & variable refer effectively to a function and variable declaration
             DeclarationNode funDecl = scope.lookup(node.function.name).declaration;
-            DeclarationNode varDecl = scope.lookup(node.variable.name).declaration;
+            Type componentType = ((UnbornType)((FunType) r.get(0)).returnType).componentType;
 
-            if (!(funDecl instanceof FunDeclarationNode && varDecl instanceof VarDeclarationNode)) {
-
-                if (!(funDecl instanceof FunDeclarationNode)) {
-                    r.error("First parameter of born node must refer to a declared function.", node);
-                }
-                if (!(varDecl instanceof VarDeclarationNode)) {
-                    r.error("Second parameter of born node must refer to a declared variable.", node);
-                }
-                
+            // Check if the function name refers effectively to a function declaration
+            if (!(funDecl instanceof FunDeclarationNode)) {
+                r.error("First parameter of born node must refer to a declared function.", node);
             } else {
-
                 // Check if the function return type to be born is Unborn
                 if (!(((FunType) r.get(0)).returnType instanceof UnbornType))
                     r.error("Trying to born a non-Unborn function.", node);
                 else {
-                    // Check if the variable type matches the Unborn inner type
-                    Type componentType = ((UnbornType)((FunType) r.get(0)).returnType).componentType;
-                    Type variableType = r.get(1);
-                    if(!(componentType.equals(variableType))) {
-                        r.error("Variable type does not match the Unborn function inner type (expected " + componentType + " but got " + variableType + ")", node);
-
+                    if (!(node.variable == null)) {
+                        // Born async function with return value
+                        if (componentType instanceof VoidType) {
+                            // Born Void async function
+                            r.error("Cannot assign the return value of a Void Unborn function to a variable: call born() with the function name only.", node);
+                        } else {
+                            R.rule()
+                            .using(node.variable.attr("type"))
+                            .by(r2 -> {
+                                // Check if the variable name refers effectively to a variable declaration
+                                DeclarationNode varDecl = scope.lookup(node.variable.name).declaration;
+    
+                                if (!(varDecl instanceof VarDeclarationNode)) {
+                                    r2.error("Second parameter of born node must refer to a declared variable.", node);    
+                                } else {
+                                    // Check if the variable type matches the Unborn inner type
+                                    Type variableType = r2.get(0);
+                                    if(!(componentType.equals(variableType))) {
+                                        r2.error("Variable type does not match the Unborn function inner type (expected " + componentType + " but got " + variableType + ")", node);
+                                    }
+                                }
+                            });
+                        }
                     }
                 }
             }
@@ -898,6 +900,7 @@ public final class SemanticAnalysis
 
     private void parameter (ParameterNode node)
     {
+        R.set(node, "threadIndex", threadIndex);
         R.set(node, "scope", scope);
         scope.declare(node.name, node); // scope pushed by FunDeclarationNode
 
@@ -952,6 +955,10 @@ public final class SemanticAnalysis
         .by(r -> {
             boolean returns = r.get(0);
             Type returnType = r.get(1);
+
+            if (returnType instanceof UnbornType)
+                returnType = ((UnbornType) returnType).componentType;
+
             if (!returns && !(returnType instanceof VoidType))
                 r.error("Missing return in function.", node);
             // NOTE: The returned value presence & type is checked in returnStmt().

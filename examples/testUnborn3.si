@@ -1,0 +1,23 @@
+fun async(param: Int): Unborn<Int> { 
+    print("Hello")
+    return param
+}
+
+/*fun sync(param: Int): Int { 
+    print("Hello")
+    return param
+}*/
+
+/*fun async(): Unborn<Int> { 
+    print("Hello")
+    var varAsync: Int = 3
+    return varAsync
+}*/
+
+var myVar: Int = 0
+
+async(1)
+
+born(async, myVar)
+
+print("" + myVar)
