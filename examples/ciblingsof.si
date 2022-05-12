@@ -1,26 +1,21 @@
-class FatherClass {
-    fun FatherClass() {
+class ClassOne {
+    var a : Int = 0
+    fun ClassOne() {}
 
+    fun someFunc() {
+        print("I'm the parent function")
+        a++
     }
 }
 
-class MyClass sonOf FatherClass { 
-    var x: Int = 0 
-    
-    fun MyClass (X: Int) { 
-        x = X 
-    } 
-}
+class ClassTwo sonOf ClassOne {
+    fun ClassTwo() {}
 
-class OtherClass {
-    fun OtherClass() {
-        
+    fun someFunc() {
+        Daddy()
     }
 }
 
-var a : Auto = MyClass(1)
-var b : Auto = OtherClass()
-var c : Auto = FatherClass()
-
-if (a ciblingsOf c) print("Working correctly") else return print("Working correctly")
-
+var instance : ClassTwo = ClassTwo()
+instance.someFunc()
+print(""+instance.a)

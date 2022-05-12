@@ -1,5 +1,7 @@
 package norswap.sigh.types;
 
+import norswap.sigh.ast.ClassDeclarationNode;
+
 import java.util.HashMap;
 import java.util.List;
 
@@ -9,8 +11,7 @@ public class ClassType extends Type
     public final String name;
     private final HashMap<String, Type> fields;
 
-    public ClassType (String name)
-    {
+    public ClassType (String name) {
         this.name = name;
         this.fields = new HashMap<>();
     }
@@ -39,7 +40,13 @@ public class ClassType extends Type
 //            return 0;
             return 1;
         } else if (type instanceof FunType) {
-         return 0;
+            Type declaredType = fields.get(name);
+            if (!declaredType.name().equals(type.name())) {
+                error.append("Trying to override a method ").append(type.name()).append(" by ").append(declaredType.name())
+                        .append(" : Overriding should respect parent signature");
+                return 3;
+            }
+            return 0;
         }
         return 1;
     }
@@ -87,6 +94,7 @@ public class ClassType extends Type
         }
         return true;
     }
+
 
     public String name () {
         return name;

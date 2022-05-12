@@ -10,7 +10,6 @@ import norswap.uranium.SemanticError;
 import norswap.utils.visitors.ReflectiveFieldWalker;
 import norswap.utils.visitors.Walker;
 
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -122,6 +121,7 @@ public final class SemanticAnalysis
         walker.register(FieldAccessNode.class,          PRE_VISIT,  analysis::fieldAccess);
         walker.register(ArrayAccessNode.class,          PRE_VISIT,  analysis::arrayAccess);
         walker.register(FunCallNode.class,              PRE_VISIT,  analysis::funCall);
+        walker.register(DaddyCallNode.class,            PRE_VISIT,  analysis::daddyCall);
         walker.register(UnaryExpressionNode.class,      PRE_VISIT,  analysis::unaryExpression);
         walker.register(BinaryExpressionNode.class,     PRE_VISIT,  analysis::binaryExpression);
         walker.register(AssignmentNode.class,           PRE_VISIT,  analysis::assignment);
@@ -187,6 +187,11 @@ public final class SemanticAnalysis
     {
         final Scope scope = this.scope;
         R.set(node, "threadIndex", threadIndex);
+
+        if (node.name.equals("Daddy")){
+            // Nothing to do here with Daddy references
+            return;
+        }
 
         // Try to lookup immediately. This must succeed for variables, but not necessarily for
         // functions or types. By looking up now, we can report looked up variables later
@@ -474,6 +479,86 @@ public final class SemanticAnalysis
                             i, node.function.contents(),paramType, argType),
                         node.arguments.get(i));
             }
+        });
+    }
+
+    // ---------------------------------------------------------------------------------------------
+
+    private void daddyCall(DaddyCallNode node) {
+        R.set(node, "threadIndex", threadIndex);
+
+        final Scope scope = this.scope;
+
+        R.rule().by(r -> {
+           // Check parent scopes
+            boolean found = false;
+            MethodDeclarationNode methodDecl = null;
+            Scope iterationScope = scope;
+            while (!found){
+                if (iterationScope.node instanceof MethodDeclarationNode) {
+                    found = true;
+                    methodDecl = (MethodDeclarationNode) iterationScope.node;
+                } else if (iterationScope.node instanceof FunDeclarationNode || iterationScope.node instanceof RootNode || iterationScope.node instanceof ClassDeclarationNode){
+                    r.error("Daddy calls must be located inside a method", node);
+                    break;
+                } else {
+                    iterationScope = iterationScope.parent;
+                }
+            }
+            if (found) {
+                R.rule(node, "parent").using(methodDecl.attr("parent")).by(rr -> {
+                   Object parentDecl = rr.get(0);
+                   // If the current function has no parent implementation
+                   if (parentDecl instanceof VoidType) {
+                       rr.error("Trying to make a Daddy call in a method that has no parent, that's cruel man.", node);
+                       rr.errorFor("Cannot find parent type, does it exists ?", node, node.attr("type"));
+                   } else {
+                       rr.set(0, (MethodDeclarationNode) parentDecl);
+                       R.rule(node.attr( "type"), node.attr("parentType")).using(parentDecl, "type").by(rrr -> {
+                           rrr.set(0, ((FunType) rrr.get(0)).returnType);
+                           rrr.set(1, rrr.get(0));
+                       });
+                   }
+                });
+            } else {
+                R.rule(node, "parent").by(rr -> {
+                   rr.errorFor("Could not resolve Daddy call", node, node.attr("parent"));
+                    rr.errorFor("Cannot find parent type, does it exists ?", node, node.attr("type"));
+                });
+            }
+        });
+
+        Attribute[] dependencies = new Attribute[node.arguments.size() + 1];
+        dependencies[0] =  node.attr("parentType");
+        forEachIndexed(node.arguments, (i, arg) -> {
+            dependencies[i + 1] = arg.attr("type");
+            R.set(arg, "index", i);
+        });
+
+        R.rule()
+            .using(dependencies)
+            .by (r -> {
+                FunType funType = r.get(0);
+
+                Type[] params = funType.paramTypes;
+                List<ExpressionNode> args = node.arguments;
+
+                if (params.length != args.size())
+                    r.errorFor(format("wrong number of arguments in Daddy call,  parent expects %d but got %d",
+                                    params.length, args.size()),
+                            node);
+
+                int checkedArgs = Math.min(params.length, args.size());
+
+                for (int i = 0; i < checkedArgs; ++i) {
+                    Type argType = r.get(i + 1);
+                    Type paramType = funType.paramTypes[i];
+                    if (!isAssignableTo(argType, paramType))
+                        r.errorFor(format(
+                                        "incompatible argument provided for argument %d in %s: expected %s but got %s",
+                                        i, node.function.contents(),paramType, argType),
+                                node.arguments.get(i));
+                }
         });
     }
 
@@ -930,6 +1015,13 @@ public final class SemanticAnalysis
             }
         }
 
+        // Check that the function isn't called 'Daddy'
+        R.rule().by(r -> {
+            if (node.name.equals("Daddy")){
+                r.error("Functions and Methods can't be named 'Daddy'", node);
+            }
+        });
+
         // Check if the declared function is async
         if (node.returnType instanceof UnbornTypeNode) {
             threadIndex = node.hashCode();
@@ -939,6 +1031,38 @@ public final class SemanticAnalysis
         scope = new Scope(node, scope);
         R.set(node, "scope", scope);
         R.set(node, "threadIndex", threadIndex);
+
+        if (node instanceof MethodDeclarationNode) {
+            // Get class declaration
+            boolean found = false;
+            ClassDeclarationNode classDeclarationNode = null;
+            Scope iteration_scope = this.scope;
+            while(!found){
+                if (iteration_scope.node instanceof ClassDeclarationNode) {
+                    found = true;
+                    classDeclarationNode = (ClassDeclarationNode) iteration_scope.node;
+                } else {
+                    iteration_scope = iteration_scope.parent;
+                }
+            }
+            // Retrieve the class scope
+            if (classDeclarationNode.parent != null){
+                ClassDeclarationNode parentClassDeclarationNode = (ClassDeclarationNode) this.scope.lookup(classDeclarationNode.parent).declaration;
+                R.rule(node, "parent").using(parentClassDeclarationNode.attr("scope")).by(r -> {
+                    Scope classScope = (Scope) r.get(0);
+                    DeclarationContext ctx = classScope.lookup(node.name);
+                    if (ctx == null) {
+                        r.set(0, VoidType.INSTANCE);
+                    } else {
+                        MethodDeclarationNode parentDecl = (MethodDeclarationNode) ctx.declaration;
+                        r.set(0, parentDecl);
+                    }
+                });
+            } else {
+                R.set(node, "parent", VoidType.INSTANCE);
+            }
+
+        }
 
         Attribute[] dependencies = new Attribute[node.parameters.size() + 1];
         dependencies[0] = node.returnType.attr("value");
@@ -1030,6 +1154,8 @@ public final class SemanticAnalysis
                     } else if (err == 2){
                         rr.errorFor("Cannot override variable : " + names.get(i) + " : ClassType " + type.hasField(names.get(i)) + " cannot be assigned to " + rr.get(i) +
                                 "(" + sb.toString() + ")", node, node.attr("Type"));
+                    } else if (err > 0){
+                        rr.errorFor(sb.toString(), node, node.attr("Type"));
                     }
                 }
                 rr.set(0, type);

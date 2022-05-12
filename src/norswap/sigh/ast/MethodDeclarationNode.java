@@ -7,6 +7,7 @@ public class MethodDeclarationNode extends FunDeclarationNode {
 
     public MethodDeclarationNode(Span span, Object name, Object parameters, Object returnType, Object block) {
         super(span, name, parameters, returnType, block);
+        this.parent = null;
     }
 
     public void setParent(MethodDeclarationNode parent) {

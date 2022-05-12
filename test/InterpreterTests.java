@@ -361,6 +361,8 @@ public final class InterpreterTests extends TestFixture {
         check("class A { var a : Int = 0  fun A(){} fun increment(){a = a + 1}} class B { var b : Int = 0 var a : Int = 0 fun B(){} fun increment(){b = b + 1}} var a : A = B() a.increment() print(\"\"+a.a)",null, "0\n");
         // Method substitution
         check("class ClassOne { fun ClassOne() {} fun someFunc() : Int { return 0 } } class ClassTwo { fun ClassTwo() {} fun someFunc() : Int { return 1 } } var instance : ClassOne = ClassTwo() var value : Int = instance.someFunc() print(\"\"+value)",null, "1\n");
+        // Use parent-defined variable
+        check("class ClassOne { fun ClassOne() {} var a : Int = 0 } class ClassTwo sonOf ClassOne { fun ClassTwo() {} fun someFunc() : Int { return a } } var instance : ClassTwo = ClassTwo() var value : Int = instance.someFunc() print(\"\"+value)",null, "0\n");
     }
     // ---------------------------------------------------------------------------------------------
 

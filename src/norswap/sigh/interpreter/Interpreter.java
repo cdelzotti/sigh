@@ -68,6 +68,7 @@ public final class Interpreter
         visitor.register(FieldAccessNode.class,          this::fieldAccess);
         visitor.register(ArrayAccessNode.class,          this::arrayAccess);
         visitor.register(FunCallNode.class,              this::funCall);
+        visitor.register(DaddyCallNode.class,            this::daddyCall);
         visitor.register(UnaryExpressionNode.class,      this::unaryExpression);
         visitor.register(BinaryExpressionNode.class,     this::binaryExpression);
         visitor.register(AssignmentNode.class,           this::assignment);
@@ -509,6 +510,33 @@ public final class Interpreter
                 returnValue = null;
         }
         return returnValue;
+    }
+
+    // ---------------------------------------------------------------------------------------------
+
+    private Object daddyCall (DaddyCallNode node)
+    {
+        MethodDeclarationNode funDecl = reactor.get(node, "parent");
+        node.arguments.forEach(this::run);
+        Object[] args = map(node.arguments, new Object[0], visitor);
+        int threadIndex = reactor.get(node, "threadIndex");
+
+        ScopeStorage oldStorage = storage.get(threadIndex);
+        Scope scope = reactor.get(funDecl, "scope");
+        storage.put(threadIndex, new ScopeStorage(scope, storage.get(threadIndex)));
+
+        coIterate(args, funDecl.parameters,
+                (arg, param) -> storage.get(threadIndex).set(scope, param.name, arg));
+
+        try {
+            get(funDecl.block);
+        } catch (Return r) {
+            return r.value;
+        } finally {
+            // Restore scope
+            storage.put(threadIndex, oldStorage);
+        }
+        return null;
     }
 
     // ---------------------------------------------------------------------------------------------

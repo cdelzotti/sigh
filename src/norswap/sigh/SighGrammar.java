@@ -3,6 +3,8 @@ package norswap.sigh;
 import norswap.autumn.Grammar;
 import norswap.sigh.ast.*;
 
+import java.util.Objects;
+
 import static norswap.sigh.ast.UnaryOperator.NOT;
 
 @SuppressWarnings("Convert2MethodRef")
@@ -143,7 +145,14 @@ public class SighGrammar extends Grammar
         .suffix(seq(LSQUARE, lazy(() -> this.expression), RSQUARE),
             $ -> new ArrayAccessNode($.span(), $.$[0], $.$[1]))
         .suffix(function_args,
-            $ -> new FunCallNode($.span(), $.$[0], $.$[1]));
+            $ -> {
+            if ($.$0() instanceof  ReferenceNode) {
+                if (Objects.equals(((ReferenceNode) $.$0()).name, "Daddy")){
+                    return new DaddyCallNode($.span(), $.$[0], $.$[1]);
+                }
+            }
+            return new FunCallNode($.span(), $.$[0], $.$[1]);
+        });
 
     public rule prefix_expression = right_expression()
         .operand(suffix_expression)

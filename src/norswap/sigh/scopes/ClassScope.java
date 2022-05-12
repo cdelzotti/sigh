@@ -26,6 +26,10 @@ public class ClassScope extends Scope {
         this.type = type;
     }
 
+    public Type getType() {
+        return type;
+    }
+
     public boolean equals(Object o){
         if (o == null) return false;
         if (!(o instanceof ClassScope)) return false;

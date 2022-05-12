@@ -1,5 +1,6 @@
 package norswap.sigh.interpreter;
 
+import norswap.sigh.scopes.ClassScope;
 import norswap.sigh.scopes.RootScope;
 import norswap.sigh.scopes.Scope;
 import java.util.HashMap;

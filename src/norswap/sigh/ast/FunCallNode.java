@@ -4,7 +4,7 @@ import norswap.autumn.positions.Span;
 import norswap.utils.Util;
 import java.util.List;
 
-public final class FunCallNode extends ExpressionNode
+public class FunCallNode extends ExpressionNode
 {
     public final ExpressionNode function;
     public final List<ExpressionNode> arguments;
