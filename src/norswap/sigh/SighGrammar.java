@@ -53,7 +53,7 @@ public class SighGrammar extends Grammar
     public rule DOT             = word(".");
     public rule DOLLAR          = word("$");
     public rule COMMA           = word(",");
-    public rule CIBLINGS        = word("ciblingsOf");
+    public rule CIBLINGS        = word("siblingsOf");
 
     public rule _var            = reserved("var");
     public rule _fun            = reserved("fun");

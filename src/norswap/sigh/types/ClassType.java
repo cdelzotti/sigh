@@ -31,17 +31,10 @@ public class ClassType extends Type
             fields.put(name, type);
             return 0;
         } else if (type instanceof ClassType) {
-//           // TODO : Maybe allows to override classType ?
-//            Type newType = fields.get(name);
-//            ClassType oldType = (ClassType) type;
-//            if (!oldType.canBeAssignedWith(newType, error)){
-//                return 2;
-//            };
-//            return 0;
             return 1;
         } else if (type instanceof FunType) {
             Type declaredType = fields.get(name);
-            if (!declaredType.name().equals(type.name())) {
+            if (!declaredType.name().equals(type.name()) && !name.equals("<constructor>")) {
                 error.append("Trying to override a method ").append(type.name()).append(" by ").append(declaredType.name())
                         .append(" : Overriding should respect parent signature");
                 return 3;

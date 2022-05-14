@@ -171,8 +171,22 @@ public final class Interpreter
         Object left  = get(node.left);
         Object right = get(node.right);
 
-        if (node.operator == BinaryOperator.CIBLINGS)
-            return ((ClassInstance) left).type().canBeAssignedWith(((ClassInstance) right).type(), new StringBuilder());
+        if (node.operator == BinaryOperator.CIBLINGS){
+            ClassType leftClass;
+            ClassType rightClass;
+            if (right instanceof ClassDeclarationNode){
+                rightClass = reactor.get(right, "type");
+                // return ((ClassInstance) left).type().canBeAssignedWith((ClassType) right, new StringBuilder());
+            } else {
+                rightClass = ((ClassInstance) right).type();
+            }
+            if (left instanceof ClassDeclarationNode) {
+                leftClass = reactor.get(left, "type");
+            } else {
+                leftClass = ((ClassInstance) left).type();
+            }
+            return leftClass.canBeAssignedWith(rightClass, new StringBuilder());
+        }
 
         if (node.operator == BinaryOperator.ADD
                 && (leftType instanceof StringType || rightType instanceof StringType))

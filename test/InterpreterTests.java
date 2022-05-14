@@ -363,6 +363,27 @@ public final class InterpreterTests extends TestFixture {
         check("class ClassOne { fun ClassOne() {} fun someFunc() : Int { return 0 } } class ClassTwo { fun ClassTwo() {} fun someFunc() : Int { return 1 } } var instance : ClassOne = ClassTwo() var value : Int = instance.someFunc() print(\"\"+value)",null, "1\n");
         // Use parent-defined variable
         check("class ClassOne { fun ClassOne() {} var a : Int = 0 } class ClassTwo sonOf ClassOne { fun ClassTwo() {} fun someFunc() : Int { return a } } var instance : ClassTwo = ClassTwo() var value : Int = instance.someFunc() print(\"\"+value)",null, "0\n");
+        // Daddy calls
+        check("class ClassOne {\n" +
+                "    var a : Int = 0\n" +
+                "    fun ClassOne() {}\n" +
+                "\n" +
+                "    fun setA(value : Int) {\n" +
+                "        a = value\n" +
+                "    }\n" +
+                "}\n" +
+                "\n" +
+                "class ClassTwo sonOf ClassOne {\n" +
+                "    fun ClassTwo() {}\n" +
+                "\n" +
+                "    fun setA(value : Int) {\n" +
+                "        Daddy(value)\n" +
+                "    }\n" +
+                "}\n" +
+                "\n" +
+                "var instance : ClassTwo = ClassTwo()\n" +
+                "instance.setA(12)\n" +
+                "print(\"\"+instance.a)", null, "12\n");
     }
     // ---------------------------------------------------------------------------------------------
 
@@ -379,12 +400,12 @@ public final class InterpreterTests extends TestFixture {
         check("var i : Int = 2  i *= 12 print(\"\"+i)",null, "24\n");
         // Rapid division
         check("var i : Int = 12  i /= 12 print(\"\"+i)",null, "1\n");
-        // ciblingsOf working with heritage
-        check("class A { fun A(){} } class B sonOf A { fun B(){}} var a : Auto = A() var b : Auto = B() if (a ciblingsOf b) print(\"working\") else print(\"crashing\")",null, "working\n");
-        // ciblingsOf working with duck typing
-        check("class A { var i : Int = 12  fun A(){} } class B { var i : Int = 23 fun B(){}} var a : Auto = A() var b : Auto = B() if (a ciblingsOf b) print(\"working\") else print(\"crashing\")",null, "working\n");
+        // siblingsOf working with heritage
+        check("class A { fun A(){} } class B sonOf A { fun B(){}} var a : Auto = A() var b : Auto = B() if (a siblingsOf b) print(\"working\") else print(\"crashing\")",null, "working\n");
+        // siblingsOf working with duck typing
+        check("class A { var i : Int = 12  fun A(){} } class B { var i : Int = 23 fun B(){}} var a : Auto = A() var b : Auto = B() if (a siblingsOf b) print(\"working\") else print(\"crashing\")",null, "working\n");
         // ciblingOf not working
-        check("class A { var k : Int = 12  fun A(){} } class B { var i : Int = 23 fun B(){}} var a : Auto = A() var b : Auto = B() if (a ciblingsOf b) print(\"working\") else print(\"crashing\")",null, "crashing\n");
+        check("class A { var k : Int = 12  fun A(){} } class B { var i : Int = 23 fun B(){}} var a : Auto = A() var b : Auto = B() if (a siblingsOf b) print(\"working\") else print(\"crashing\")",null, "crashing\n");
 
     }
 

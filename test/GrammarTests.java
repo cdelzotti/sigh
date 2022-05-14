@@ -117,7 +117,7 @@ public class GrammarTests extends AutumnTestFixture {
                         "FatherClass",
                         asList(
                             new VarDeclarationNode(null, "x", new SimpleTypeNode(null, "Int"), intlit(0)),
-                            new FunDeclarationNode(null, "MyClass",
+                            new MethodDeclarationNode(null, "MyClass",
                                 asList(new ParameterNode(null, "X", new SimpleTypeNode(null, "Int"))),
                                 new SimpleTypeNode(null, "Void"),
                                 new BlockNode(null,
@@ -208,7 +208,7 @@ public class GrammarTests extends AutumnTestFixture {
                         )));
 
         // ciblingsOf operator
-        successExpect("var a : Bool = i ciblingsOf j",
+        successExpect("var a : Bool = i siblingsOf j",
                 new VarDeclarationNode(null,
                         "a",
                         new SimpleTypeNode(null, "Bool"),

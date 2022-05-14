@@ -60,7 +60,10 @@ public final class SemanticAnalysisTests extends UraniumTestFixture
         // Member call
         successInput("class Point { var X : Int = 0 var Y : Int = 0 fun Point(x : Int, y : Int) {X = x Y = y} fun getX() : Int { return X } } var myVar: Point = Point(12, 13) var myX : Int = myVar.getX()");
         successInput("class Point { var X : Int = 0 var Y : Int = 0 fun Point(x : Int, y : Int) {X = x Y = y} fun getX() : Int { return X } } var myVar: Point = Point(12, 13) myVar.Y = 14");
-
+        // siblingsOf operator
+        successInput("class Obj { var X : Int = 0 fun Obj() {} } class Obj2 { var X : Int = 0  fun Obj2() { } } var myVar: Obj2 = Obj() if (myVar siblingsOf Obj){}");
+        // Daddy calls
+        successInput("class Obj { var X : Int = 0 fun Obj() {} fun method(){print(\"Method\")}} class Obj2 sonOf Obj {fun Obj2() { } fun method(){Daddy()}}");
 
         failureInputWith("class Point { var X : Int = 0 var Y : Int = 0 fun Point(x : Int, y : Int) {X = x Y = y} } var myVar: Point = Point(12)",
                         "wrong number of arguments");
@@ -73,7 +76,17 @@ public final class SemanticAnalysisTests extends UraniumTestFixture
         failureInputWith("class Class1 sonOf Class2 { fun Class1() {}} class Class2 sonOf Class1 { fun Class2() {}}",
                         "Cyclic inheritance");
         failureInputWith("class Point { var X: Int = 0 var Y: Int = 0 }", "Missing constructor for class `Point`");
+        failureInputWith("class Obj { var X : Int = 0 fun Obj() {} } class Obj2 { var X : Int = 0  fun Obj2() { } } var myVar: Obj2 = Obj() if (myVar siblingsOf Int){}",
+                "Trying to check if two non-classes are siblings.");
+        failureInputWith("class Obj { var X : Int = 0 fun Obj(){}} class Obj2 sonOf Obj {fun Obj2() { } fun method(){Daddy()}}",
+                "no parent", "Cannot find parent type, does it exists ?", "missing attribute");
 
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    @Test public void testSyntacticSugar(){
+        successInput("class SomeLongAndBoringClassNameThatNeverEnds {fun SomeLongAndBoringClassNameThatNeverEnds(){}} var a : Auto = SomeLongAndBoringClassNameThatNeverEnds()");
+        successInput("var i : Int = 12 i++ i-- i += 1 i -= 1 i *= 1 i /= 1");
     }
 
     // ---------------------------------------------------------------------------------------------

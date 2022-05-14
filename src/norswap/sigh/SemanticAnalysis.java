@@ -204,7 +204,9 @@ public final class SemanticAnalysis
 
             R.rule(node, "type")
             .using(maybeCtx.declaration, "type")
-            .by(Rule::copyFirst);
+            .by( r -> {
+                r.set(0, r.get(0));
+            });
             return;
         }
 
@@ -661,8 +663,9 @@ public final class SemanticAnalysis
     {
         if (!(left instanceof ClassType && right instanceof ClassType)) {
             r.error("Trying to check if two non-classes are siblings.", node);
+        } else {
+            r.set(0, BoolType.INSTANCE);
         }
-        r.set(0, BoolType.INSTANCE);
     }
 
 
@@ -811,7 +814,10 @@ public final class SemanticAnalysis
             else
                 R.rule(node, "value")
                 .using(decl, "declared")
-                .by(Rule::copyFirst);
+                .by(rr ->
+                    {
+                        rr.set(0, rr.get(0));
+                    });
         });
     }
 
@@ -821,7 +827,10 @@ public final class SemanticAnalysis
     {
         R.rule(node, "value")
         .using(node.componentType, "value")
-        .by(r -> r.set(0, new ArrayType(r.get(0))));
+        .by(r ->
+                {
+                    r.set(0, new ArrayType(r.get(0)));
+                });
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -949,21 +958,40 @@ public final class SemanticAnalysis
         scope.declare(node.name, node);
         R.set(node, "scope", scope);
 
-//        R.rule(node, "type")
-//        .using(node.type, "value")
-//        .by(Rule::copyFirst);
 
-        R.rule(node, "type")
+        if (node.initializer instanceof ArrayLiteralNode) {
+            R.rule(node, "type")
+                    .using(node.type, "value")
+                    .by(r -> {
+                        r.set(0, r.get(0));
+                    });
+        } else {
+            R.rule(node, "type").using(node.type.attr("value"), node.initializer.attr("type")).by(r -> {
+                Type expected = r.get(0);
+                Type actual = r.get(1);
+                if (expected instanceof AutoType) {
+                    r.set(0, actual);
+                } else {
+                    r.set(0, expected);
+                }
+            });
+        }
+
+        R.rule()
         .using(node.type.attr("value"), node.initializer.attr("type"))
         .by(r -> {
             Type expected = r.get(0);
             Type actual = r.get(1);
 
-            if (expected instanceof AutoType) {
-                r.set(0, actual);
-            } else {
-                r.set(0, expected);
+            if (expected instanceof AutoType && actual instanceof AutoType) {
+                r.error("Cannot infer type of variable '" + node.name + "'. Are you messing with Auto variables ?", node);
             }
+
+            if (expected instanceof AutoType && actual instanceof ArrayType) {
+                r.error("Auto type is not allowed for arrays", node);
+            }
+
+
 
             if (expected instanceof ClassType){
                 StringBuilder sb = new StringBuilder();
@@ -1046,7 +1074,7 @@ public final class SemanticAnalysis
                 }
             }
             // Retrieve the class scope
-            if (classDeclarationNode.parent != null){
+            if (classDeclarationNode.parent != null && this.scope.lookup(classDeclarationNode.parent) != null && this.scope.lookup(classDeclarationNode.parent).declaration instanceof ClassDeclarationNode) {
                 ClassDeclarationNode parentClassDeclarationNode = (ClassDeclarationNode) this.scope.lookup(classDeclarationNode.parent).declaration;
                 R.rule(node, "parent").using(parentClassDeclarationNode.attr("scope")).by(r -> {
                     Scope classScope = (Scope) r.get(0);
