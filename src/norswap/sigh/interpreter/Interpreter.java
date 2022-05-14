@@ -94,7 +94,7 @@ public final class Interpreter
     public Object interpret (SighNode root) {
         try {
             return run(root);
-        } catch (PassthroughException e) {
+        } catch (PassthroughException | BornNodeException e) {
             throw Exceptions.runtime(e.getCause());
         }
     }
@@ -368,6 +368,14 @@ public final class Interpreter
 
         try {
             node.statements.forEach(this::run);
+            // Join all threads if the user forgot to born some async functions
+            for (Thread thread : threadPool.values()) {
+                try {
+                        thread.join();
+                } catch (Exception e) {
+                    
+                }
+            }
         } catch (Return r) {
             return r.value;
             // allow returning from the main script
@@ -384,6 +392,8 @@ public final class Interpreter
         int threadIndex = reactor.get(node, "threadIndex");
         storage.put(threadIndex, new ScopeStorage(scope, storage.get(threadIndex)));
         node.statements.forEach(this::run);
+        assert (storage != null);
+        assert (storage.get(threadIndex).parent != null);
         storage.put(threadIndex, storage.get(threadIndex).parent);
         return null;
     }
@@ -487,8 +497,13 @@ public final class Interpreter
             funDecl = (FunDeclarationNode) decl;
             async = funDecl.returnType instanceof UnbornTypeNode;
             returnValue = null;
+            int newThreadIndex = reactor.get(funDecl, "threadIndex");
+
+            if (async) {
+                storage.put(newThreadIndex, new ScopeStorage(scope, storage.get(threadIndex)));
+            }
             coIterate(args, funDecl.parameters,
-                    (arg, param) -> storage.get(threadIndex).set(scope, param.name, arg));
+                (arg, param) -> storage.get(newThreadIndex).set(scope, param.name, arg));
         }
 
         try {
@@ -649,18 +664,22 @@ public final class Interpreter
 
     private Void bornStmt (BornNode node) {
         try {
-            threadPool.get(node.function.name).join();
+            Thread thread = threadPool.get(node.function.name);
 
-            Scope scope = reactor.get(node, "scope");
-            VarDeclarationNode varDecl = (VarDeclarationNode) scope.lookup(node.variable.name).declaration;
-            FunDeclarationNode funDecl = (FunDeclarationNode) scope.lookup(node.function.name).declaration;
-            int threadIndex = reactor.get(funDecl, "threadIndex");
-            int nodeThreadIndex = reactor.get(node, "threadIndex");
+            if (thread == null) {
+                throw new BornNodeException("exception while executing born node " + node, new NullPointerException("Please call the async function before trying to born it."));
+            }
 
-            assign(scope, node.variable.name, returnValues.get(threadIndex), reactor.get(varDecl, "type"), nodeThreadIndex);
+            thread.join();
+            if (!(node.variable == null)) {
+                Scope scope = reactor.get(node, "scope");
+                VarDeclarationNode varDecl = (VarDeclarationNode) scope.lookup(node.variable.name).declaration;
+                FunDeclarationNode funDecl = (FunDeclarationNode) scope.lookup(node.function.name).declaration;
+                int threadIndex = reactor.get(funDecl, "threadIndex");
+                int nodeThreadIndex = reactor.get(node, "threadIndex");
+                assign(scope, node.variable.name, returnValues.get(threadIndex), reactor.get(varDecl, "type"), nodeThreadIndex);
+            }
         } catch (InterruptedException e) {
-
-            e.printStackTrace();
         }
         return null;
     }

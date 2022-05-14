@@ -346,4 +346,19 @@ public final class SemanticAnalysisTests extends UraniumTestFixture
     }
 
     // ---------------------------------------------------------------------------------------------
+
+    @Test public void asyncFunctionDeclaration()
+    {
+        successInput("fun async(): Unborn<Int> { return 1 }");
+        failureInputWith("fun async(): Unborn<String> { return 1 }", "Incompatible return type, expected String but got Int");
+        successInput("fun async(): Unborn<Void> { print(\"Hello\") }");
+    }
+
+    @Test public void bornExpression()
+    {
+        successInput("fun async(): Unborn<Int> { return 1 } async() var myVar: Int = 0 born(async, myVar)");
+        successInput("fun async(): Unborn<Int> { return 1 } async() var myVar: Int = 0 born(async)");
+        failureInputWith("fun async(): Unborn<Void> { } async() var myVar: Int = 0 born(async, myVar)", "Cannot assign the return value of a Void Unborn function to a variable: call born() with the function name only.");
+        successInput("fun async(): Unborn<Void> { } async() var myVar: Int = 0 born(async)");
+    }
 }

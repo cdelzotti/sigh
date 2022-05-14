@@ -1,0 +1,7 @@
+fun async(): Unborn<Void> {
+    print("hello")
+}
+
+async()
+
+born(async)
