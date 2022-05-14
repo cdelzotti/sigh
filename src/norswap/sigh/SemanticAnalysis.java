@@ -496,14 +496,13 @@ public final class SemanticAnalysis
     private void bornExpression (BornNode node) {
         R.set(node, "threadIndex", threadIndex);
         R.set(node, "scope", scope);
-
+        
         final Scope scope = this.scope;
 
         R.rule()
         .using(node.function.attr("type"))
         .by(r -> {
             DeclarationNode funDecl = scope.lookup(node.function.name).declaration;
-            Type componentType = ((UnbornType)((FunType) r.get(0)).returnType).componentType;
 
             // Check if the function name refers effectively to a function declaration
             if (!(funDecl instanceof FunDeclarationNode)) {
@@ -513,6 +512,7 @@ public final class SemanticAnalysis
                 if (!(((FunType) r.get(0)).returnType instanceof UnbornType))
                     r.error("Trying to born a non-Unborn function.", node);
                 else {
+                    Type componentType = ((UnbornType)((FunType) r.get(0)).returnType).componentType;
                     if (!(node.variable == null)) {
                         // Born async function with return value
                         if (componentType instanceof VoidType) {
@@ -900,7 +900,6 @@ public final class SemanticAnalysis
 
     private void parameter (ParameterNode node)
     {
-        R.set(node, "threadIndex", threadIndex);
         R.set(node, "scope", scope);
         scope.declare(node.name, node); // scope pushed by FunDeclarationNode
 

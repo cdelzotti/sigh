@@ -350,6 +350,14 @@ public final class Interpreter
 
         try {
             node.statements.forEach(this::run);
+            // Join all threads if the user forgot to born some async functions
+            for (Thread thread : threadPool.values()) {
+                try {
+                        thread.join();
+                } catch (Exception e) {
+                    
+                }
+            }
         } catch (Return r) {
             return r.value;
             // allow returning from the main script
@@ -366,6 +374,8 @@ public final class Interpreter
         int threadIndex = reactor.get(node, "threadIndex");
         storage.put(threadIndex, new ScopeStorage(scope, storage.get(threadIndex)));
         node.statements.forEach(this::run);
+        assert (storage != null);
+        assert (storage.get(threadIndex).parent != null);
         storage.put(threadIndex, storage.get(threadIndex).parent);
         return null;
     }
@@ -469,8 +479,13 @@ public final class Interpreter
             funDecl = (FunDeclarationNode) decl;
             async = funDecl.returnType instanceof UnbornTypeNode;
             returnValue = null;
+            int newThreadIndex = reactor.get(funDecl, "threadIndex");
+
+            if (async) {
+                storage.put(newThreadIndex, new ScopeStorage(scope, storage.get(threadIndex)));
+            }
             coIterate(args, funDecl.parameters,
-                    (arg, param) -> storage.get(threadIndex).set(scope, param.name, arg));
+                (arg, param) -> storage.get(newThreadIndex).set(scope, param.name, arg));
         }
 
         try {
@@ -607,7 +622,7 @@ public final class Interpreter
             Thread thread = threadPool.get(node.function.name);
 
             if (thread == null) {
-                throw new BornNodeException("exception while executing born node " + node, new NullPointerException("Thread does not exist in Threadpool"));
+                throw new BornNodeException("exception while executing born node " + node, new NullPointerException("Please call the async function before trying to born it."));
             }
 
             thread.join();

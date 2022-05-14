@@ -7,6 +7,7 @@ import norswap.sigh.SemanticAnalysis;
 import norswap.sigh.SighGrammar;
 import norswap.sigh.ast.SighNode;
 import norswap.sigh.interpreter.Interpreter;
+import norswap.sigh.interpreter.InterpreterException;
 import norswap.sigh.interpreter.Null;
 import norswap.uranium.Reactor;
 import norswap.uranium.SemanticError;
@@ -370,12 +371,18 @@ public final class InterpreterTests extends TestFixture {
         check("fun async(): Unborn<Int> {var asyncVar: Int = 10 return asyncVar} fun sync(): Int {var syncVar: Int = 20 return syncVar} async() var resultAsync: Int = 0 born(async, resultAsync) var resultSync: Int = sync() print(\"\" + resultAsync) print(\"\" + resultSync)", null, "10\n20\n");
 
         // Void async
+        check("fun async(): Unborn<Void> {print(\"hello\")} async() born(async)", null, "hello\n");
         
         // Parameters
+        check("fun async(param: String): Unborn<Void> {print(\"hello \" + param)} async(\"world\") born(async)", null, "hello world\n");
 
         // Unborn with no born
+        // Works because missing born statements are automatically added to prevent async thread from running indefinitely
+        check("fun async(param: String): Unborn<Void> {print(\"hello \" + param)} async(\"world\")", null, "hello world\n");
 
         // Born with no unborn
+        // Throws an InterpreterException because this error can only be checked at runtime
+        checkThrows("fun async(param: String): Unborn<Void> {print(\"hello \" + param)} born(async)", InterpreterException.class);
     }
 
     // NOTE(norswap): Not incredibly complete, but should cover the basics.
