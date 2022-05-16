@@ -360,5 +360,19 @@ public final class SemanticAnalysisTests extends UraniumTestFixture
         successInput("fun async(): Unborn<Int> { return 1 } async() var myVar: Int = 0 born(async)");
         failureInputWith("fun async(): Unborn<Void> { } async() var myVar: Int = 0 born(async, myVar)", "Cannot assign the return value of a Void Unborn function to a variable: call born() with the function name only.");
         successInput("fun async(): Unborn<Void> { } async() var myVar: Int = 0 born(async)");
+        failureInputWith("class A {\n" +
+                "    var msg : String = \"\"\n" +
+                "    fun A(param : String){\n" +
+                "        msg = param\n" +
+                "    }\n" +
+                "\n" +
+                "    fun async(iter : Int) : Unborn<Void>{\n" +
+                "        while(iter >0) {iter--}\n" +
+                "        print(msg)\n" +
+                "    }\n" +
+                "}\n" +
+                "\n" +
+                "var instance : Auto = A(\"Message\")\n" +
+                "instance.async(10000)", "Async methods can only be called from within the class");
     }
 }

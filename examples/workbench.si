@@ -1,0 +1,14 @@
+class A {
+    var msg : String = ""
+    fun A(param : String){
+        msg = param
+    }
+
+    fun async(iter : Int) : Unborn<Void>{
+        while(iter >0) {iter--}
+        print(msg)
+    }
+}
+
+var instance : Auto = A("Message")
+instance.async(10000)

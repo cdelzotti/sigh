@@ -374,6 +374,11 @@ public final class SemanticAnalysis
                     r.errorFor(description, node,
                         node.attr("type"));
                 } else {
+                    if (fieldType instanceof FunType)
+                        if (((FunType) fieldType).returnType instanceof UnbornType) {
+                            r.errorFor("Async methods can only be called from within the class", node, node.attr("type"));
+                            return;
+                        }
                     R.rule(node, "type").by(rr -> rr.set(0, fieldType));
                 }
             } else {

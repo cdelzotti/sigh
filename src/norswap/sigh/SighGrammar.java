@@ -336,7 +336,7 @@ public class SighGrammar extends Grammar
         .push($ -> new ReturnNode($.span(), $.$[0]));
 
     public rule born_stmt =
-        seq(_born, LPAREN, expression, seq(COMMA, expression).or_push_null(), RPAREN)
+        seq(_born, LPAREN, reference, seq(COMMA, expression).or_push_null(), RPAREN)
         .push($ -> new BornNode($.span(), $.$[0], $.$[1]));
 
     public rule maybe_classInheritence = seq(_sonOf, identifier).or_push_null();

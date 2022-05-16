@@ -306,4 +306,29 @@ public final class IntegrationTests extends TestFixture {
                 "Rectangle of area : 18\n");
     }
 
+
+    @Test
+    public void testAsyncAndClasses(){
+        rule = grammar.root;
+        check("class A {\n" +
+                "    var msg : String = \"\"\n" +
+                "    fun A(param : String){\n" +
+                "        msg = param\n" +
+                "    }\n" +
+                "\n" +
+                "    fun async(iter : Int) : Unborn<Void>{\n" +
+                "        while(iter >0) {iter--}\n" +
+                "        print(msg)\n" +
+                "    }\n" +
+                "\n" +
+                "    fun callAsync(iter : Int) {\n" +
+                "        async(iter)\n" +
+                "        print(\"Synced print\")\n" +
+                "        born(async)\n" +
+                "    }\n" +
+                "}\n" +
+                "\n" +
+                "var instance : Auto = A(\"Asynced message\")\n" +
+                "instance.callAsync(100000)", null, "Synced print\nAsynced message\n");
+    }
 }
